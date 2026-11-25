@@ -2,9 +2,9 @@
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
   "name": "Ilé",
   "description": "Household bill agent. Holds a family's USD₮ and pays each household bill in Lagos in cNGN on its due date, converting on Textile FX on Celo, within spending caps and a rate floor set by the sender. Every payment is public and verifiable.",
-  "image": "https://plutoski.github.io/ile/icon.svg",
+  "image": "https://ile-docs.vercel.app/icon.svg",
   "services": [
-    { "name": "web", "endpoint": "https://plutoski.github.io/ile/" },
+    { "name": "web", "endpoint": "https://ile-docs.vercel.app/" },
     { "name": "source", "endpoint": "https://github.com/Plutoski/ile" }
   ],
   "x402Support": false,
