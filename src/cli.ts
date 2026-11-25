@@ -97,7 +97,7 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     if (dry) {
       const unpaid = h.bills.filter((b) => b.active && !isSettled(ledger)(b.id, periodOf(b, now)));
       const [dec, ref] = await Promise.all([chain.decimals(TOKENS.CNGN), fetchReferenceRate()]);
-      log(`dry run: pricing ${unpaid.length} unpaid bill(s); mid-market ${ref ? `₦${ref.rate.toFixed(2)}/$ from ${ref.sources.map((s) => s.name).join(" + ")}` : "unavailable"}`);
+      log(`dry run: pricing ${unpaid.length} unpaid bill(s); official rate ${ref ? `₦${ref.rate.toFixed(2)}/$ from ${ref.sources.map((s) => s.name).join(" + ")}` : "unavailable"}`);
       for (const b of unpaid) {
         const p = await textile.preview({ sellToken: TOKENS.USDT, buyToken: TOKENS.CNGN, buyAmount: BigInt(b.amountNgn) * 10n ** BigInt(dec) });
         if (p.status !== "preview" || !p.takerPays) { log(`  ${b.id}: no price (${p.status})`); continue; }
@@ -105,8 +105,8 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
         const rate = effectiveRate(BigInt(b.amountNgn) * 10n ** BigInt(dec), dec, cost);
         const spread = ref ? ((ref.rate - rate) / ref.rate) * 100 : null;
         const verdict = cost > parseUnits(String(h.policy.maxUsdtPerPayout), USDT_DECIMALS) ? "OVER per-bill cap"
-          : spread !== null && spread > h.policy.maxSpreadPct ? `REFUSE (${spread.toFixed(2)}% below mid)` : "would pay";
-        log(`  ${b.id.padEnd(20)} ₦${b.amountNgn} ≈ ${fmtUsdt(cost)} USD₮ at ₦${rate.toFixed(2)}/$${spread === null ? "" : ` (${spread >= 0 ? "-" : "+"}${Math.abs(spread).toFixed(2)}% vs mid)`} → ${verdict}`);
+          : spread !== null && spread > h.policy.maxSpreadPct ? `REFUSE (${spread.toFixed(2)}% below official)` : "would pay";
+        log(`  ${b.id.padEnd(20)} ₦${b.amountNgn} ≈ ${fmtUsdt(cost)} USD₮ at ₦${rate.toFixed(2)}/$${spread === null ? "" : ` (${spread >= 0 ? "-" : "+"}${Math.abs(spread).toFixed(2)}% vs official)`} → ${verdict}`);
       }
       return;
     }

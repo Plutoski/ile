@@ -25,7 +25,7 @@ export interface Payment {
   cngnAmount: string;
   /** Naira per USD₮ actually paid, fee included. */
   rate: number;
-  /** Mid-market naira per US dollar at quote time, when available. */
+  /** Official naira per US dollar at quote time, when available. */
   referenceRate: number | null;
   rfqId: string;
   txs: { approve?: Hash; swap: Hash; transfer?: Hash };

@@ -96,7 +96,7 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
     if (!firm) return skip(lastReason);
 
     const takerPays = BigInt(firm.quote.takerPays);
-    log(`quote ${firm.rfqId}: ₦${bill.amountNgn} for ${fmtUsdt(takerPays)} USD₮ (₦${rate.toFixed(2)}/$${spreadPct === null ? "" : `, ${spreadPct.toFixed(2)}% vs mid`})`);
+    log(`quote ${firm.rfqId}: ₦${bill.amountNgn} for ${fmtUsdt(takerPays)} USD₮ (₦${rate.toFixed(2)}/$${spreadPct === null ? "" : `, ${spreadPct.toFixed(2)}% vs official`})`);
 
     const usdtBalance = await chain.balance(TOKENS.USDT);
     if (usdtBalance < takerPays) {

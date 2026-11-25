@@ -56,10 +56,10 @@ describe("quote checks", () => {
     expect(v).toMatchObject({ ok: false, reason: expect.stringContaining("monthly cap") });
   });
 
-  it("refuses a rate too far below mid-market", () => {
+  it("refuses a rate too far below the official rate", () => {
     // ₦2000 for $1.50 is ₦1333/$, 8% below ₦1450
     const v = checkQuote(base({ firm: firmQuote(2000, 1.5, now) }));
-    expect(v).toMatchObject({ ok: false, reason: expect.stringContaining("below mid-market") });
+    expect(v).toMatchObject({ ok: false, reason: expect.stringContaining("below the official rate") });
   });
 
   it("refuses a quote about to expire", () => {

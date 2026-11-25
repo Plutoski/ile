@@ -86,6 +86,12 @@
   .decisions { list-style: none; padding: 0; margin: 0; max-width: var(--measure); }
   .decisions li { padding: 0.75rem 0 0.75rem 1rem; border-left: 3px solid var(--skip); margin-bottom: 0.75rem; }
   .decisions time { display: block; font-size: 0.875rem; color: var(--muted); }
+  .decisions li.failed { border-left-color: #B4412E; }
+  .family { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 2rem; align-items: start; max-width: 760px; }
+  .family blockquote { margin: 0; font-size: 1.5rem; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+  .family figcaption, .family .who { color: var(--muted); font-size: 0.95rem; margin-top: 0.75rem; }
+  .family img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  @media (max-width: 640px) { .family { grid-template-columns: 1fr; } .family figure { max-width: 260px; } }
 
   .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.5rem 2.5rem; margin: 0; }
   .rules dt { font-weight: 700; }
@@ -120,7 +126,7 @@
       <dl class="facts">
         <div><dt>Naira delivered</dt><dd id="f-ngn">₦0</dd></div>
         <div><dt>Bills paid</dt><dd id="f-paid">0</dd></div>
-        <div><dt>Average rate vs mid-market</dt><dd id="f-rate">–</dd></div>
+        <div><dt>Average rate paid</dt><dd id="f-rate">–</dd></div>
       </dl>
     </div>
     <aside class="slip" id="slip" aria-label="Latest payment receipt">
@@ -135,25 +141,40 @@
 
 <main class="wrap">
   <section aria-labelledby="h-bills">
-    <h2 class="sec" id="h-bills">This month's bills</h2>
+    <h2 class="sec" id="h-bills">The household's bills</h2>
     <p class="note" id="bills-note">What the household needs paid, and when. Times are Lagos time.</p>
     <ul class="bills" id="bills"><li class="empty">Loading the household…</li></ul>
   </section>
 
+  <section aria-labelledby="h-family">
+    <h2 class="sec" id="h-family">From the family</h2>
+    <div class="family">
+      <div>
+        <blockquote>“I got my ₦3,000 for the light bill.”</blockquote>
+        <p class="who">Halimah, AJ's sister, on WhatsApp, 26 Nov 2026. Shared with her permission.</p>
+        <p class="note" style="margin-top:1rem">Her MetaMask, on Celo, shows the 3,000 cNGN in the wallet the agent paid.</p>
+      </div>
+      <figure style="margin:0">
+        <img src="evidence/halimah-electricity-received.jpg" width="330" height="507" alt="Halimah's MetaMask on Celo Mainnet showing 3,000 cNGN, with her message: I got my ₦3,000 for the light bill">
+        <figcaption>Cropped; no phone number or contact details.</figcaption>
+      </figure>
+    </div>
+  </section>
+
   <section aria-labelledby="h-payments">
     <h2 class="sec" id="h-payments">Payments</h2>
-    <p class="note">Each bill is a USD₮ to cNGN conversion on Textile FX, then a transfer to the recipient. The rate includes Textile's fee and is compared with the mid-market USD/NGN rate at the time.</p>
+    <p class="note">Each bill is a USD₮ to cNGN conversion on Textile FX, then a transfer to the recipient. The rate includes Textile's fee. It is compared with the CBN's official rate at the time; Textile's rate tracks Nigeria's street rate, which in late 2026 sits about 6% above the official one.</p>
     <div class="scroll">
       <table class="table">
-        <thead><tr><th scope="col">Bill</th><th scope="col">Paid to</th><th scope="col" class="num">Naira</th><th scope="col" class="num">Cost</th><th scope="col" class="num">Rate</th><th scope="col" class="num">vs mid-market</th><th scope="col">Proof</th></tr></thead>
+        <thead><tr><th scope="col">Bill</th><th scope="col">Paid to</th><th scope="col" class="num">Naira</th><th scope="col" class="num">Cost</th><th scope="col" class="num">Rate</th><th scope="col" class="num">vs official</th><th scope="col">Proof</th></tr></thead>
         <tbody id="payments"><tr><td colspan="7" class="empty">No payments yet.</td></tr></tbody>
       </table>
     </div>
   </section>
 
   <section aria-labelledby="h-decisions">
-    <h2 class="sec" id="h-decisions">What the agent chose not to do</h2>
-    <p class="note">When a quote breaks a rule, the agent cancels it, moves nothing, and writes down why.</p>
+    <h2 class="sec" id="h-decisions">What the agent refused, and what went wrong</h2>
+    <p class="note">When a quote breaks a rule, the agent cancels it, moves nothing, and writes down why. Failures stay on the record too; the README explains each one and its fix.</p>
     <ul class="decisions" id="decisions"><li class="empty" style="border:0;padding-left:0">Nothing refused so far.</li></ul>
   </section>
 
@@ -224,7 +245,7 @@ function renderSlip(p, recipients, bills) {
   add("Paid to", who ? who.name : short(p.recipient));
   add("Cost", usd(p.usdtSpent) + " USD₮");
   add("Rate", ngn(p.rate) + " / $");
-  add("vs mid", fmtSpread(spreadVsMid(p)));
+  if (p.referenceRate) add("vs official", fmtSpread(spreadVsMid(p)));
   add("Tx", link(CELOSCAN + "/tx/" + p.txs.transfer, short(p.txs.transfer)));
   const stamp = document.getElementById("s-stamp");
   stamp.textContent = "PAID · DELIVERED IN cNGN";
@@ -247,8 +268,8 @@ function renderSlip(p, recipients, bills) {
   const totalNgn = payments.reduce((s, p) => s + p.amountNgn, 0);
   document.getElementById("f-ngn").textContent = ngn(totalNgn);
   document.getElementById("f-paid").textContent = String(payments.length);
-  const spreads = payments.map(spreadVsMid).filter((s) => s !== null);
-  if (spreads.length) document.getElementById("f-rate").textContent = fmtSpread(spreads.reduce((a, b) => a + b, 0) / spreads.length);
+  const usdTotal = payments.reduce((s, p) => s + Number(p.usdtSpent) / 1e6, 0);
+  if (usdTotal > 0) document.getElementById("f-rate").textContent = ngn(totalNgn / usdTotal) + "/$";
 
   // Receipt
   const latest = [...payments].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
@@ -292,7 +313,8 @@ function renderSlip(p, recipients, bills) {
     const ul = document.getElementById("decisions");
     ul.replaceChildren();
     for (const d of [...decisions].reverse().slice(0, 12)) {
-      ul.append(el("li", {}, el("time", { datetime: d.at }, new Date(d.at).toLocaleString("en-GB", { timeZone: "Africa/Lagos", dateStyle: "medium", timeStyle: "short" }) + " · " + d.billId), d.reason));
+      const when = new Date(d.at).toLocaleString("en-GB", { timeZone: "Africa/Lagos", dateStyle: "medium", timeStyle: "short" });
+      ul.append(el("li", { class: d.action }, el("time", { datetime: d.at }, `${when} · ${d.billId} · ${d.action === "failed" ? "failed" : "refused"}`), d.reason));
     }
   }
 
@@ -303,7 +325,7 @@ function renderSlip(p, recipients, bills) {
   if (pol) {
     rule(`At most $${pol.maxUsdtPerPayout} per bill`, "A quote that costs more is refused, fee included.");
     rule(`At most $${pol.maxUsdtPerMonth} per month`, "Counted across every bill in the Lagos calendar month.");
-    rule(`No worse than ${pol.maxSpreadPct}% below mid-market`, "Checked against two independent USD/NGN sources. If they disagree, nothing is paid.");
+    rule(`No worse than ${pol.maxSpreadPct}% below the official rate`, "Checked against two independent sources for the CBN rate. If they disagree, nothing is paid.");
   }
   rule("Only listed recipients", "Naira only goes to the wallets named in the household file.");
   rule("Only Textile's contract", "The agent approves and calls Textile's reactor and nothing else, for the exact amount.");

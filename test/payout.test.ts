@@ -80,7 +80,7 @@ describe("paying a bill", () => {
     const chain = fakeChain({ usdt: 5_000000n });
     const { d, ledger, textile } = deps(chain, [{ status: "quoted", firm: firmQuote(2000, 1.6, NOW.getTime()) }]);
     const out = await payBill(light, h, d);
-    expect(out).toMatchObject({ kind: "skipped", reason: expect.stringContaining("below mid-market") });
+    expect(out).toMatchObject({ kind: "skipped", reason: expect.stringContaining("below the official rate") });
     expect(chain.writes).toEqual([]);
     expect(textile.cancel).toHaveBeenCalledOnce();
     expect(ledger.decisions[0]).toMatchObject({ billId: "light", action: "skipped" });

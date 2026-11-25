@@ -28,7 +28,7 @@ export interface Policy {
   /** Hard cap on USD₮ spent across all bills in one calendar month (Lagos time). */
   maxUsdtPerMonth: number;
   /**
-   * Worst acceptable rate, as a percentage below the mid-market USD/NGN
+   * Worst acceptable rate, as a percentage below the official USD/NGN
    * reference. A quote further below the reference is refused.
    */
   maxSpreadPct: number;

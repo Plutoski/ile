@@ -1,5 +1,7 @@
 /**
- * Mid-market USD -> NGN reference used to judge Textile quotes.
+ * Official USD -> NGN reference used to judge Textile quotes. Both free sources
+ * track the CBN's official (NFEM) rate, which in late 2026 sits roughly 6% below
+ * Nigeria's street rate; a sound Textile quote therefore lands at or above it.
  * Two free public sources: when both answer, the agent uses their average,
  * and trusts neither if they disagree by more than 5%.
  */

@@ -13,7 +13,7 @@ export interface QuoteCheckInput {
   policy: Policy;
   /** Atomic USD₮ already committed this month. */
   spentThisMonth: bigint;
-  /** Mid-market naira per dollar, or null when no reference could be fetched. */
+  /** Official naira per dollar, or null when no reference could be fetched. */
   referenceRate: number | null;
   now: number;
 }
@@ -69,7 +69,7 @@ export function checkQuote(i: QuoteCheckInput): Verdict {
   if (spreadPct > policy.maxSpreadPct) {
     return {
       ok: false,
-      reason: `rate ₦${rate.toFixed(2)}/$ is ${spreadPct.toFixed(2)}% below mid-market ₦${i.referenceRate.toFixed(2)}/$ (limit ${policy.maxSpreadPct}%)`,
+      reason: `rate ₦${rate.toFixed(2)}/$ is ${spreadPct.toFixed(2)}% below the official rate ₦${i.referenceRate.toFixed(2)}/$ (limit ${policy.maxSpreadPct}%)`,
     };
   }
   return { ok: true, rate, spreadPct };
