@@ -1,0 +1,21 @@
+{
+  "name": "The Ajala family, Nigeria",
+  "sender": "AJ (Calgary)",
+  "recipients": [
+    { "id": "gbolahan", "name": "Gbolahan", "relation": "brother", "address": "0x456ce57362fBCF46138356f101AaB2e419F69812" },
+    { "id": "eniola", "name": "Eniola", "relation": "cousin", "address": "0x6b6A34783d132cF881EA7cD8092A6586F7Da464A" },
+    { "id": "halimah", "name": "Halimah", "relation": "sister", "address": "0x70Db9413327F370098DE8061BFd377b692De30E5" }
+  ],
+  "bills": [
+    { "id": "halimah-electricity", "label": "Prepaid electricity top-up", "category": "utilities", "recipientId": "halimah", "amountNgn": 3000, "schedule": { "kind": "once", "date": "2026-11-28" } },
+    { "id": "gbolahan-data", "label": "Mobile data", "category": "communication", "recipientId": "gbolahan", "amountNgn": 2000, "schedule": { "kind": "once", "date": "2026-11-29" } },
+    { "id": "eniola-transport", "label": "Transport for the week", "category": "transport", "recipientId": "eniola", "amountNgn": 2500, "schedule": { "kind": "once", "date": "2026-12-01" } },
+    { "id": "halimah-upkeep", "label": "Market and household upkeep", "category": "household", "recipientId": "halimah", "amountNgn": 2000, "schedule": { "kind": "once", "date": "2026-12-03" } },
+    { "id": "gbolahan-airtime", "label": "Airtime", "category": "communication", "recipientId": "gbolahan", "amountNgn": 2000, "schedule": { "kind": "once", "date": "2026-12-05" } }
+  ],
+  "policy": {
+    "maxUsdtPerPayout": 3,
+    "maxUsdtPerMonth": 10,
+    "maxSpreadPct": 3
+  }
+}

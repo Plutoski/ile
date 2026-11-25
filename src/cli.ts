@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import { formatUnits, isHex, type Hex } from "viem";
+import { formatUnits, isHex, parseUnits, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { makeChain, makePublicClient } from "./chain.js";
 import { AGENT_ADDRESS, EXPLORER_TX, TOKENS, USDT_DECIMALS } from "./config.js";
@@ -8,7 +8,7 @@ import { dueDateOf, isDue, lagosDate, parseHousehold, periodOf, type Household }
 import { registerAgent } from "./identity.js";
 import { isSettled, loadLedger, saveLedger, usdtSpentInMonth } from "./ledger.js";
 import { payBill } from "./payout.js";
-import { fmtUsdt } from "./policy.js";
+import { effectiveRate, fmtUsdt } from "./policy.js";
 import { fetchReferenceRate } from "./rate.js";
 import { TextileClient } from "./textile.js";
 import { verifyLedger } from "./verify.js";
@@ -90,20 +90,29 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     const chain = chainFor();
     const { ledger, persist } = await openLedger(chain.agent);
     const now = new Date();
-    const due = h.bills.filter((b) => isDue(b, now, isSettled(ledger)));
-    log(`${due.length} bill(s) due on ${lagosDate(now)}${dry ? " (dry run)" : ""}`);
-    if (due.length === 0) return persist();
-
     const textile = new TextileClient(account());
+
+    // Dry run: price every unpaid bill with Textile's free preview. Moves nothing, reserves nothing.
     if (dry) {
-      const dec = await chain.decimals(TOKENS.CNGN);
-      const ref = await fetchReferenceRate();
-      for (const b of due) {
+      const unpaid = h.bills.filter((b) => b.active && !isSettled(ledger)(b.id, periodOf(b, now)));
+      const [dec, ref] = await Promise.all([chain.decimals(TOKENS.CNGN), fetchReferenceRate()]);
+      log(`dry run: pricing ${unpaid.length} unpaid bill(s); mid-market ${ref ? `₦${ref.rate.toFixed(2)}/$ from ${ref.sources.map((s) => s.name).join(" + ")}` : "unavailable"}`);
+      for (const b of unpaid) {
         const p = await textile.preview({ sellToken: TOKENS.USDT, buyToken: TOKENS.CNGN, buyAmount: BigInt(b.amountNgn) * 10n ** BigInt(dec) });
-        log(`${b.id}: ₦${b.amountNgn} would cost ~${p.takerPays ? fmtUsdt(BigInt(p.takerPays)) : "?"} USD₮ (${p.status}); mid-market ₦${ref?.rate.toFixed(2) ?? "n/a"}/$`);
+        if (p.status !== "preview" || !p.takerPays) { log(`  ${b.id}: no price (${p.status})`); continue; }
+        const cost = BigInt(p.takerPays);
+        const rate = effectiveRate(BigInt(b.amountNgn) * 10n ** BigInt(dec), dec, cost);
+        const spread = ref ? ((ref.rate - rate) / ref.rate) * 100 : null;
+        const verdict = cost > parseUnits(String(h.policy.maxUsdtPerPayout), USDT_DECIMALS) ? "OVER per-bill cap"
+          : spread !== null && spread > h.policy.maxSpreadPct ? `REFUSE (${spread.toFixed(2)}% below mid)` : "would pay";
+        log(`  ${b.id.padEnd(20)} ₦${b.amountNgn} ≈ ${fmtUsdt(cost)} USD₮ at ₦${rate.toFixed(2)}/$${spread === null ? "" : ` (${spread >= 0 ? "-" : "+"}${Math.abs(spread).toFixed(2)}% vs mid)`} → ${verdict}`);
       }
       return;
     }
+
+    const due = h.bills.filter((b) => isDue(b, now, isSettled(ledger)));
+    log(`${due.length} bill(s) due on ${lagosDate(now)}`);
+    if (due.length === 0) return persist();
     let failures = 0;
     for (const b of due) {
       const out = await payBill(b, h, { chain, textile, reference: fetchReferenceRate, ledger, persist, log });

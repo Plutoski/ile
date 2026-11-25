@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ilé · household bills paid in naira</title>
-<meta name="description" content="Ilé is an agent that pays a Lagos household's bills in cNGN from US dollars, converting on Textile FX on Celo. Every payment is public and checkable.">
+<meta name="description" content="Ilé is an agent that pays a Nigerian family's bills in cNGN from US dollars, converting on Textile FX on Celo. Every payment is public and checkable.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,7 +115,7 @@
   <div class="wrap">
     <div>
       <p class="name">Ilé <span>household bills, paid in naira</span></p>
-      <h1 id="headline">Mum's bills in Lagos, paid on time from Calgary.</h1>
+      <h1 id="headline">Family bills in Nigeria, paid on time from Calgary.</h1>
       <p class="lede" id="lede">Ilé holds the family's US dollars and pays each household bill in naira on the day it is due, at a rate it checks first, within limits set by the sender. Every payment below is a public transaction anyone can check.</p>
       <dl class="facts">
         <div><dt>Naira delivered</dt><dd id="f-ngn">₦0</dd></div>
@@ -238,8 +238,9 @@ function renderSlip(p, recipients, bills) {
   const recipients = household?.recipients ?? [];
 
   if (household) {
-    const first = recipients[0];
-    if (first) document.getElementById("headline").textContent = `${first.name}'s bills in Lagos, paid on time from ${household.sender.replace(/^.*\(|\)$/g, "") || "abroad"}.`;
+    const from = household.sender.match(/\(([^)]+)\)/)?.[1] ?? "abroad";
+    const who = recipients.length === 1 ? `${recipients[0].name}'s bills` : "Family bills";
+    document.getElementById("headline").textContent = `${who} in Nigeria, paid on time from ${from}.`;
   }
 
   // Facts
