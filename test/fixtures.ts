@@ -51,6 +51,7 @@ export function firmQuote(ngn: number, usdt: number, now: number, over: Partial<
 export function fakeChain(init: { usdt: bigint; cngn?: bigint; allowance?: bigint; swapDelivers?: bigint }) {
   const state = { usdt: init.usdt, cngn: init.cngn ?? 0n, allowance: init.allowance ?? 0n };
   const writes: { op: string; args: unknown[] }[] = [];
+  const swapDeliveries = new Map<Hash, bigint>();
   let n = 0;
   const hash = () => (`0x${(++n).toString(16).padStart(64, "0")}`) as Hash;
   const chain: ChainOps & { state: typeof state; writes: typeof writes; nextSwapDelivers: bigint } = {
@@ -69,8 +70,11 @@ export function fakeChain(init: { usdt: bigint; cngn?: bigint; allowance?: bigin
     send: async (tx: { to: Address; data: Hex }) => {
       writes.push({ op: "swap", args: [tx.to] });
       state.cngn += chain.nextSwapDelivers;
-      return hash();
+      const h = hash();
+      swapDeliveries.set(h, chain.nextSwapDelivers);
+      return h;
     },
+    receivedIn: async (_token, h) => swapDeliveries.get(h) ?? 0n,
     transfer: async (_t, to, amount) => {
       if (state.cngn < amount) throw new Error("insufficient cNGN");
       state.cngn -= amount;

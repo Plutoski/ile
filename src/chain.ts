@@ -5,6 +5,7 @@ import {
 } from "viem";
 import { celo } from "viem/chains";
 import { ATTRIBUTION_CODE, DEFAULT_RPC_URL, USDT_FEE_ADAPTER } from "./config.js";
+import { tokenFlows } from "./receipts.js";
 
 /** Everything the payment flow needs from the chain. Writes resolve only after a successful receipt. */
 export interface ChainOps {
@@ -15,6 +16,8 @@ export interface ChainOps {
   approve(token: Address, spender: Address, amount: bigint): Promise<Hash>;
   send(tx: { to: Address; data: Hex }): Promise<Hash>;
   transfer(token: Address, to: Address, amount: bigint): Promise<Hash>;
+  /** What the agent received of `token` in a confirmed transaction, read from its receipt logs. */
+  receivedIn(token: Address, hash: Hash): Promise<bigint>;
 }
 
 export interface ChainOptions {
@@ -52,6 +55,10 @@ export function makeChain({ account, rpcUrl = DEFAULT_RPC_URL, gasInUsdt = false
     send: async ({ to, data }) => confirm(await wallet.sendTransaction({ to, data, value: 0n, ...fee })),
     transfer: async (token, to, amount) =>
       confirm(await wallet.writeContract({ address: token, abi: erc20Abi, functionName: "transfer", args: [to, amount], ...fee })),
+    receivedIn: async (token, hash) => {
+      const receipt = await publicClient.getTransactionReceipt({ hash });
+      return tokenFlows(receipt.logs, token, account.address).received;
+    },
   };
   return { ...ops, publicClient, wallet, fee, confirm };
 }

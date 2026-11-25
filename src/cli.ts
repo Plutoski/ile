@@ -5,6 +5,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { makeChain, makePublicClient } from "./chain.js";
 import { AGENT_ADDRESS, EXPLORER_TX, TOKENS, USDT_DECIMALS } from "./config.js";
 import { dueDateOf, isDue, lagosDate, parseHousehold, periodOf, type Household } from "./household.js";
+import { adoptSwap } from "./adopt.js";
 import { registerAgent } from "./identity.js";
 import { isSettled, loadLedger, saveLedger, usdtSpentInMonth } from "./ledger.js";
 import { payBill } from "./payout.js";
@@ -121,9 +122,15 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     if (failures) process.exitCode = 1;
   },
 
-  /** Pay one bill now, even before its due date. Caps, rate checks and double-pay protection still apply. */
-  async pay([billId]) {
-    if (!billId) throw new Error("usage: pay <billId>");
+  /**
+   * Pay one bill now, even before its due date. Caps, rate checks and double-pay protection still apply.
+   * Usage: pay <billId>, or pay <billId>:<swapTxHash> to adopt an unrecorded swap first.
+   */
+  async pay(args) {
+    // "billId:swapTxHash" first records a swap the agent completed but could not record, then delivers it.
+    const [billId, swapHash] = (args[0] ?? "").split(":");
+    if (swapHash) await commands.adopt!([billId!, swapHash]);
+    if (!billId) throw new Error("usage: pay <billId> or pay <billId>:<swapTxHash>");
     const h = await household();
     const bill = h.bills.find((b) => b.id === billId);
     if (!bill) throw new Error(`no bill "${billId}" in ${HOUSEHOLD_FILE}`);
@@ -131,6 +138,31 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     const { ledger, persist } = await openLedger(chain.agent);
     const out = await payBill(bill, h, { chain, textile: new TextileClient(account()), reference: fetchReferenceRate, ledger, persist, log });
     if (out.kind === "failed") process.exitCode = 1;
+  },
+
+  /**
+   * Record a completed swap the agent could not record itself, after checking it onchain.
+   * Usage: adopt <billId> <swapTxHash>  (or "billId:swapTxHash" as one argument)
+   */
+  async adopt(args) {
+    const [billId, hash] = args.length === 1 ? args[0]!.split(/[:\s]+/) : args;
+    if (!billId || !hash?.match(/^0x[0-9a-fA-F]{64}$/)) throw new Error("usage: adopt <billId> <swapTxHash>");
+    const h = await household();
+    const bill = h.bills.find((b) => b.id === billId);
+    if (!bill) throw new Error(`no bill "${billId}" in ${HOUSEHOLD_FILE}`);
+    const chain = chainFor();
+    const { ledger, persist } = await openLedger(chain.agent);
+    const [tx, receipt, dec] = await Promise.all([
+      chain.publicClient.getTransaction({ hash: hash as `0x${string}` }),
+      chain.publicClient.getTransactionReceipt({ hash: hash as `0x${string}` }),
+      chain.decimals(TOKENS.CNGN),
+    ]);
+    const payment = adoptSwap({
+      ledger, household: h, bill, agent: chain.agent, cngnDecimals: dec, now: new Date(),
+      swap: { hash: tx.hash, from: tx.from, to: tx.to, input: tx.input, status: receipt.status, logs: receipt.logs },
+    });
+    await persist();
+    log(`adopted swap for ${bill.id}: ₦${payment.amountNgn} bought for ${fmtUsdt(BigInt(payment.usdtSpent))} USD₮; run "pay ${bill.id}" to deliver it`);
   },
 
   /** Register the agent's ERC-8004 identity from the agent wallet. */

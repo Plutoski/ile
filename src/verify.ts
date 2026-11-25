@@ -1,7 +1,8 @@
 import { fromDataSuffix } from "@celo/attribution-tags";
-import { erc20Abi, getAddress, parseEventLogs, type Hash, type PublicClient } from "viem";
+import { getAddress, type Hash, type PublicClient } from "viem";
 import { ATTRIBUTION_CODE, TEXTILE, TOKENS } from "./config.js";
 import type { Ledger } from "./ledger.js";
+import { tokenFlows } from "./receipts.js";
 
 export interface TxCheck { billId: string; step: string; hash: Hash; ok: boolean; problems: string[] }
 
@@ -25,20 +26,18 @@ export async function verifyLedger(client: PublicClient, ledger: Ledger): Promis
       const tag = fromDataSuffix(tx.input);
       if (!tag?.codes.includes(ATTRIBUTION_CODE)) problems.push("missing attribution tag");
 
-      const transfers = parseEventLogs({ abi: erc20Abi, eventName: "Transfer", logs: receipt.logs });
       if (step === "swap") {
-        const paid = transfers.filter((t) => getAddress(t.address) === getAddress(TOKENS.USDT) && getAddress(t.args.from) === agent)
-          .reduce((s, t) => s + t.args.value, 0n);
-        const got = transfers.filter((t) => getAddress(t.address) === getAddress(TOKENS.CNGN) && getAddress(t.args.to) === agent)
-          .reduce((s, t) => s + t.args.value, 0n);
+        // Gas paid in USD₮ shows up as transfers too; tokenFlows leaves those out.
+        const paid = tokenFlows(receipt.logs, TOKENS.USDT, agent).sent;
+        const got = tokenFlows(receipt.logs, TOKENS.CNGN, agent).received;
         if (getAddress(tx.to!) !== getAddress(TEXTILE.reactor)) problems.push("swap did not go to Textile's reactor");
         if (paid !== BigInt(p.usdtSpent)) problems.push(`USD₮ paid ${paid}, ledger says ${p.usdtSpent}`);
         if (got < BigInt(p.cngnAmount)) problems.push(`cNGN received ${got}, ledger says ${p.cngnAmount}`);
       }
       if (step === "transfer") {
-        const sent = transfers.find((t) => getAddress(t.address) === getAddress(TOKENS.CNGN) && getAddress(t.args.to) === getAddress(p.recipient));
+        const sent = tokenFlows(receipt.logs, TOKENS.CNGN, agent).to.find((t) => t.address === getAddress(p.recipient));
         if (!sent) problems.push("no cNGN transfer to the recipient");
-        else if (sent.args.value !== BigInt(p.cngnAmount)) problems.push(`sent ${sent.args.value} cNGN, ledger says ${p.cngnAmount}`);
+        else if (sent.amount !== BigInt(p.cngnAmount)) problems.push(`sent ${sent.amount} cNGN, ledger says ${p.cngnAmount}`);
       }
       checks.push({ billId: p.billId, step, hash, ok: problems.length === 0, problems });
     }

@@ -118,11 +118,11 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
       return fail("quote expired while the approval confirmed; next run will re-quote");
     }
 
-    const cngnBefore = await chain.balance(TOKENS.CNGN);
     const swapHash = await chain.send({ to: firm.transactions.swap.to, data: firm.transactions.swap.data });
-    const received = (await chain.balance(TOKENS.CNGN)) - cngnBefore;
+    // Read the delivery from the swap's own receipt. A balance read here can hit a node one block behind.
+    const received = await chain.receivedIn(TOKENS.CNGN, swapHash);
     log(`swapped: ${swapHash} (+${received} cNGN atomic)`);
-    if (received < buyAmount) throw new Error(`swap delivered ${received} cNGN, expected ${buyAmount}`);
+    if (received < buyAmount) throw new Error(`swap ${swapHash} delivered ${received} cNGN, expected ${buyAmount}; check it on celoscan before rerunning`);
 
     const stamp = now().toISOString();
     const payment: Payment = {
@@ -138,7 +138,7 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
     await deps.textile.submit(firm.rfqId, firm.claimToken, swapHash)
       .catch((e) => log(`warn: could not report swap to Textile (${(e as Error).message}); settlement is unaffected`));
 
-    return await deliver(payment, recipient.address, deps);
+    return await deliver(payment, recipient.address, deps, true);
   } catch (err) {
     const msg = err instanceof TextileError && /insufficient/i.test(err.message)
       ? "agent wallet does not hold enough USD₮ for this bill"
@@ -147,11 +147,18 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
   }
 }
 
-async function deliver(payment: Payment, to: Address, deps: PayDeps): Promise<PayOutcome> {
+/**
+ * Send bought naira to the recipient. Right after a swap we already know the
+ * cNGN arrived (from the receipt), so we skip a balance read that could be stale.
+ * When resuming a stopped run, check the balance first.
+ */
+async function deliver(payment: Payment, to: Address, deps: PayDeps, justSwapped = false): Promise<PayOutcome> {
   const now = deps.now ?? (() => new Date());
   const amount = BigInt(payment.cngnAmount);
-  const held = await deps.chain.balance(TOKENS.CNGN);
-  if (held < amount) throw new Error(`agent holds ${held} cNGN, needs ${amount} to deliver ${payment.billId}`);
+  if (!justSwapped) {
+    const held = await deps.chain.balance(TOKENS.CNGN);
+    if (held < amount) throw new Error(`agent holds ${held} cNGN, needs ${amount} to deliver ${payment.billId}`);
+  }
   const hash = await deps.chain.transfer(TOKENS.CNGN, to, amount);
   payment.txs.transfer = hash;
   payment.status = "paid";
