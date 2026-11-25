@@ -7,6 +7,12 @@ import type { Address } from "viem";
  */
 export const CHAIN_ID = 42220;
 
+/**
+ * The one agent wallet for the whole event (Loops House scores are tied to it).
+ * The agent refuses to start if its key belongs to any other address.
+ */
+export const AGENT_ADDRESS: Address = "0x2E5b3E46Db5d842EF5be17867900C428E635eB51";
+
 /** Loops House "Agents Open for Business" attribution code for this entry. */
 export const ATTRIBUTION_CODE = "celo_10e86a43fdc3";
 

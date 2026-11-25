@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { formatUnits, isHex, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { makeChain, makePublicClient } from "./chain.js";
-import { EXPLORER_TX, TOKENS, USDT_DECIMALS } from "./config.js";
+import { AGENT_ADDRESS, EXPLORER_TX, TOKENS, USDT_DECIMALS } from "./config.js";
 import { dueDateOf, isDue, lagosDate, parseHousehold, periodOf, type Household } from "./household.js";
 import { registerAgent } from "./identity.js";
 import { isSettled, loadLedger, saveLedger, usdtSpentInMonth } from "./ledger.js";
@@ -32,7 +32,18 @@ function account() {
   if (!key) throw new Error("AGENT_PRIVATE_KEY is not set");
   const hex = (key.startsWith("0x") ? key : `0x${key}`) as Hex;
   if (!isHex(hex) || hex.length !== 66) throw new Error("AGENT_PRIVATE_KEY is not a 32-byte hex key");
-  return privateKeyToAccount(hex);
+  const acct = privateKeyToAccount(hex);
+  if (acct.address !== AGENT_ADDRESS) {
+    throw new Error(`AGENT_PRIVATE_KEY belongs to ${acct.address}, not the agent wallet ${AGENT_ADDRESS}. Check the repo secret.`);
+  }
+  return acct;
+}
+
+async function householdIfPresent(): Promise<Household | null> {
+  try { return await household(); } catch (e) {
+    if ((e as Error).message.includes("not found")) return null;
+    throw e;
+  }
 }
 
 function chainFor() {
@@ -52,7 +63,7 @@ async function openLedger(agent: `0x${string}`) {
 const commands: Record<string, (args: string[]) => Promise<void>> = {
   /** Balances, schedule and what is due today. Read-only. */
   async status() {
-    const h = await household();
+    const h = await householdIfPresent();
     const chain = chainFor();
     const { ledger } = await openLedger(chain.agent);
     const now = new Date();
@@ -62,8 +73,9 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     ]);
     console.log(`Agent      ${chain.agent}`);
     console.log(`Balances   ${formatUnits(usdt, USDT_DECIMALS)} USD₮ · ${formatUnits(cngn, dec)} cNGN · ${formatUnits(celo, 18)} CELO`);
-    console.log(`This month ${fmtUsdt(usdtSpentInMonth(ledger, now))} / ${h.policy.maxUsdtPerMonth} USD₮ spent`);
-    console.log(`Today      ${lagosDate(now)} (Lagos)\n`);
+    console.log(`Today      ${lagosDate(now)} (Lagos)`);
+    if (!h) return console.log(`\nNo ${HOUSEHOLD_FILE} yet: the wallet works, there is just nothing to pay.`);
+    console.log(`This month ${fmtUsdt(usdtSpentInMonth(ledger, now))} / ${h.policy.maxUsdtPerMonth} USD₮ spent\n`);
     for (const b of h.bills) {
       const state = isSettled(ledger)(b.id, periodOf(b, now)) ? "paid" : isDue(b, now, isSettled(ledger)) ? "DUE" : "upcoming";
       console.log(`  ${state.padEnd(8)} ${b.id.padEnd(20)} ₦${b.amountNgn.toLocaleString("en-NG").padEnd(10)} due ${dueDateOf(b, now)}  ${b.label}`);
@@ -73,7 +85,8 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
   /** Pay every bill that is due. --dry-run prices them with a free preview and moves nothing. */
   async run(args) {
     const dry = args.includes("--dry-run");
-    const h = await household();
+    const h = await householdIfPresent();
+    if (!h) return log(`no ${HOUSEHOLD_FILE} yet; nothing to pay`);
     const chain = chainFor();
     const { ledger, persist } = await openLedger(chain.agent);
     const now = new Date();

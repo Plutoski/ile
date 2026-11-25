@@ -1,0 +1,62 @@
+name: agent
+
+# The agent runs here, in public: every run's log is visible on the Actions tab.
+on:
+  schedule:
+    - cron: "17 */4 * * *" # every 4 hours; pays whatever is due
+  workflow_dispatch:
+    inputs:
+      command:
+        description: What to run
+        type: choice
+        default: status
+        options: [status, run, dry-run, pay, register, verify]
+      arg:
+        description: "Bill id for pay, agent.json URL for register"
+        type: string
+        required: false
+
+permissions:
+  contents: write # the agent commits its ledger back to the repo
+
+# Never two runs at once: the ledger is the agent's memory of what it has paid.
+concurrency:
+  group: agent
+  cancel-in-progress: false
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Run agent
+        env:
+          AGENT_PRIVATE_KEY: ${{ secrets.AGENT_PRIVATE_KEY }}
+          RPC_URL: ${{ vars.RPC_URL || 'https://forno.celo.org' }}
+          GAS_IN_USDT: ${{ vars.GAS_IN_USDT || 'false' }}
+          COMMAND: ${{ inputs.command || 'run' }}
+          ARG: ${{ inputs.arg }}
+        run: |
+          case "$COMMAND" in
+            dry-run) npm run --silent agent -- run --dry-run ;;
+            *)       npm run --silent agent -- "$COMMAND" ${ARG:+"$ARG"} ;;
+          esac
+
+      - name: Commit ledger
+        if: always()
+        run: |
+          if [ ! -d data ]; then echo "no ledger yet"; exit 0; fi
+          git add data
+          if git diff --cached --quiet; then echo "ledger unchanged"; exit 0; fi
+          git config user.name "ile-agent"
+          git config user.email "ile-agent@users.noreply.github.com"
+          git commit -m "ledger: ${{ inputs.command || 'scheduled run' }} ${{ github.run_id }}"
+          git pull --rebase
+          git push
