@@ -1,7 +1,28 @@
 {
   "version": 1,
   "agent": "0x2E5b3E46Db5d842EF5be17867900C428E635eB51",
-  "payments": [],
+  "payments": [
+    {
+      "billId": "halimah-electricity",
+      "period": "once",
+      "recipientId": "halimah",
+      "recipient": "0x70Db9413327F370098DE8061BFd377b692De30E5",
+      "amountNgn": 3000,
+      "usdtSpent": "2083235",
+      "usdtFee": "416",
+      "cngnAmount": "3000000000",
+      "rate": 1440.0679712082408,
+      "referenceRate": null,
+      "rfqId": "recovered-from-chain",
+      "txs": {
+        "swap": "0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802",
+        "transfer": "0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966"
+      },
+      "status": "paid",
+      "createdAt": "2026-11-25T23:09:52.429Z",
+      "updatedAt": "2026-11-25T23:09:54.573Z"
+    }
+  ],
   "decisions": [
     {
       "at": "2026-11-25T22:57:19.916Z",
