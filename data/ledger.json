@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "agent": "0x2E5b3E46Db5d842EF5be17867900C428E635eB51",
+  "payments": [],
+  "decisions": [
+    {
+      "at": "2026-11-25T22:57:19.916Z",
+      "billId": "halimah-electricity",
+      "period": "once",
+      "action": "failed",
+      "reason": "swap delivered 0 cNGN, expected 3000000000"
+    }
+  ]
+}
