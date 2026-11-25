@@ -1,0 +1,28 @@
+{
+  "name": "ile",
+  "version": "0.1.0",
+  "description": "Ilé: a household bill agent that pays Nigerian bills in cNGN from USD₮, via Textile FX on Celo",
+  "scripts": {
+    "test": "vitest run",
+    "agent": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "verify": "tsx src/cli.ts verify"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@celo/attribution-tags": "^0.5.0",
+    "viem": "^2.58.6"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.2"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  }
+}

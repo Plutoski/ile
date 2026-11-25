@@ -1,0 +1,17 @@
+{
+  "name": "The Ajala household, Lagos",
+  "sender": "AJ (Calgary)",
+  "recipients": [
+    { "id": "mum", "name": "Mum", "relation": "mother", "address": "0x0000000000000000000000000000000000000001" }
+  ],
+  "bills": [
+    { "id": "electricity", "label": "Prepaid electricity top-up", "category": "utilities", "recipientId": "mum", "amountNgn": 2000, "schedule": { "kind": "monthly", "day": 1 } },
+    { "id": "upkeep", "label": "Weekly market / upkeep", "category": "household", "recipientId": "mum", "amountNgn": 2500, "schedule": { "kind": "monthly", "day": 3 } },
+    { "id": "school-fees", "label": "School fees contribution", "category": "education", "recipientId": "mum", "amountNgn": 3000, "schedule": { "kind": "once", "date": "2026-12-04" } }
+  ],
+  "policy": {
+    "maxUsdtPerPayout": 3,
+    "maxUsdtPerMonth": 10,
+    "maxSpreadPct": 3
+  }
+}
