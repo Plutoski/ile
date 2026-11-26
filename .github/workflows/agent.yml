@@ -53,7 +53,13 @@ jobs:
         if: always()
         run: |
           if [ ! -d data ]; then echo "no ledger yet"; exit 0; fi
-          git add data
+          # Copy the data into the public site too, so the page loads it from its own server.
+          mkdir -p docs/data
+          cp household.json docs/data/household.json
+          for f in data/ledger.json data/identity.json; do
+            if [ -f "$f" ]; then cp "$f" docs/data/; fi
+          done
+          git add data docs/data
           if git diff --cached --quiet; then echo "ledger unchanged"; exit 0; fi
           git config user.name "ile-agent"
           git config user.email "ile-agent@users.noreply.github.com"

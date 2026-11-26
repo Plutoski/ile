@@ -7,24 +7,21 @@
 <meta name="description" content="Ilé is an agent that pays a Nigerian family's bills in naira from US dollars, converting on Textile FX on Celo. Every payment is public and can be checked.">
 <meta name="theme-color" content="#131A4B">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
 <link rel="preconnect" href="https://forno.celo.org" crossorigin>
+<link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <script>
-// Fetch the household and ledger before anything else, so the page fills in quickly.
-const RAW = location.hostname === "localhost" ? "/" : "https://raw.githubusercontent.com/Plutoski/ile/main/";
-async function load(path) {
-  try {
-    const r = await fetch(RAW + path + "?t=" + Math.floor(Date.now() / 60000), { cache: "no-store" });
-    return r.ok ? r.json() : null;
-  } catch { return null; }
+// Fetch the household and ledger first. The agent copies them into this site after every run,
+// so they load from the same server as the page. GitHub is the fallback.
+const GH = "https://raw.githubusercontent.com/Plutoski/ile/main/";
+async function get(url) {
+  try { const r = await fetch(url, { cache: "no-cache" }); return r.ok ? await r.json() : null; } catch { return null; }
 }
-const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load("data/identity.json")]);
+const load = async (name, ghPath) => (await get("data/" + name)) ?? (await get(GH + ghPath + "?t=" + Math.floor(Date.now() / 60000)));
+const DATA = Promise.all([load("household.json", "household.json"), load("ledger.json", "data/ledger.json"), load("identity.json", "data/identity.json")]);
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
 <style>
+  @font-face { font-family: "Archivo"; src: url("fonts/archivo.woff2") format("woff2"); font-weight: 400 800; font-stretch: 100% 115%; font-display: swap; }
+  @font-face { font-family: "IBM Plex Mono"; src: url("fonts/plex-mono.woff2") format("woff2"); font-weight: 400; font-display: swap; }
   :root {
     --dye: #131A4B;        /* adire indigo, the one loud colour */
     --dye-2: #1E2865;
@@ -45,7 +42,7 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--bar) + 12px); }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.6 "Schibsted Grotesk", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.6 "Archivo", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
   a:hover { text-decoration-thickness: 2px; }
   :focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
@@ -68,7 +65,7 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
   .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 4rem; padding-top: 3.5rem; padding-bottom: 3.5rem; align-items: end; }
   .hero h1 { margin: 0 0 2.25rem; font-size: clamp(1.25rem, 2vw, 1.55rem); font-weight: 500; line-height: 1.35; color: var(--on-dye-soft); max-width: 30ch; }
   .hero h1 strong { color: var(--on-dye); font-weight: 500; }
-  .figure { margin: 0; font-size: clamp(4.25rem, 11vw, 9.5rem); font-weight: 800; line-height: 0.88; letter-spacing: -0.035em; }
+  .figure { margin: 0; font-size: clamp(4.25rem, 11vw, 9.5rem); font-weight: 800; font-stretch: 112%; line-height: 0.88; letter-spacing: -0.035em; }
   /* The naira sign sits small and light at the top, so its bars never touch the first digit. */
   .figure .cur { font-size: 0.5em; font-weight: 500; letter-spacing: 0; vertical-align: 0.68em; margin-right: 0.12em; color: var(--on-dye-soft); }
   .figure-note { margin: 1.1rem 0 0; font-size: 1.15rem; color: var(--on-dye-soft); }
