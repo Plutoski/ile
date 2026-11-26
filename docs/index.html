@@ -85,9 +85,10 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
 
   /* Sections */
   main section { padding: 4.5rem 0 0; }
-  .head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 2rem; align-items: baseline; margin-bottom: 2rem; }
+  .head { margin-bottom: 2.25rem; }
+  .head h2 + p { margin-top: 1.1rem; }
   h2 { margin: 0; font-size: 1.85rem; line-height: 1.15; font-weight: 800; letter-spacing: -0.025em; }
-  .head p { margin: 0; color: var(--muted); max-width: 60ch; }
+  .head p { margin: 0; color: var(--muted); max-width: 62ch; font-size: 1.1rem; }
 
   /* Bills timeline: the due dates are a real sequence */
   .timeline { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); }
@@ -164,7 +165,6 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
   @media (max-width: 980px) {
     .nav { display: none; }
     .hero .wrap { grid-template-columns: 1fr; gap: 2.5rem; padding-top: 2.5rem; padding-bottom: 2.5rem; }
-    .head { grid-template-columns: 1fr; gap: 0.5rem; }
     .verify { gap: 2.5rem; }
   }
   @media (max-width: 720px) {
