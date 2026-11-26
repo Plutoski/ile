@@ -153,14 +153,35 @@
   .rule dd { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.95rem; }
 
   /* Verify */
-  .verify { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
-  .verify .card { padding: 1.5rem; }
-  .facts { margin: 0; display: grid; gap: 0.9rem; }
-  .facts dt { color: var(--muted); font-size: 0.875rem; }
-  .facts dd { margin: 0.1rem 0 0; overflow-wrap: anywhere; }
+  .verify { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+  .verify .card { padding: 0.5rem 1.5rem; }
+  .verify .card.cmd { padding: 1.5rem; display: flex; flex-direction: column; }
+  .facts { margin: 0; }
+  .facts > div { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; }
+  .facts > div + div { border-top: 1px solid var(--line); }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; display: flex; align-items: center; gap: 0.5rem; text-align: right; font-weight: 600; min-width: 0; }
+  .facts dd a { text-decoration: none; }
+  .facts dd a:hover { text-decoration: underline; }
+  .copy { flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 10px; background: #EEF0F6; color: var(--muted); cursor: pointer; }
+  .copy:hover { background: #E3E7F6; color: var(--night); }
+  .copy svg { width: 16px; height: 16px; }
+  .copy.done { background: var(--paid-soft); color: var(--paid); }
+  .proof-run { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; padding: 0.75rem; border-radius: var(--r-inner); background: #F7F8FB; color: var(--ink); text-decoration: none; }
+  .proof-run:hover { background: #EEF0F6; }
+  .proof-run .icon { width: 36px; height: 36px; flex: none; }
+  .proof-run .icon svg { width: 18px; height: 18px; }
+  .proof-run strong { display: block; color: var(--adire); }
+  .cmd-title { margin: 0; font-weight: 700; font-size: 1.05rem; }
+  .code { margin-top: 1rem; border-radius: var(--r-inner); background: var(--night); overflow: hidden; }
+  .code-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.5rem 0.45rem 1.1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); color: #AEB7E0; font-size: 0.85rem; }
+  .code pre { margin: 0; border-radius: 0; }
+  .code .copy { width: 30px; height: 30px; background: rgba(255, 255, 255, 0.1); color: #C3CAEB; }
+  .code .copy:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+  .code .copy.done { background: rgba(91, 227, 161, 0.18); color: #5BE3A1; }
   pre { margin: 1rem 0 0; padding: 1rem 1.1rem; border-radius: var(--r-inner); background: var(--night); color: #E5E9FA; overflow-x: auto; font: 400 0.85rem/1.7 "IBM Plex Mono", ui-monospace, monospace; }
 
-  footer { padding: 3.5rem 0 3rem; color: var(--muted); font-size: 0.9rem; }
+  footer.wrap { padding-top: 3.5rem; padding-bottom: 3rem; color: var(--muted); font-size: 0.9rem; }
 
   /* Mobile tab bar */
   .tabbar { display: none; }
@@ -189,7 +210,9 @@
     .family { grid-template-columns: 1fr; padding: 1.5rem 1.25rem; gap: 1.5rem; }
     .family figure { max-width: 240px; }
     .rules, .verify { grid-template-columns: minmax(0, 1fr); }
-    .verify .card { padding: 1.25rem; }
+    .verify .card { padding: 0.25rem 1.1rem; }
+    .verify .card.cmd { padding: 1.25rem; }
+    footer.wrap { padding-top: 2.5rem; }
     .top .src { padding: 0.45rem 0.85rem; }
     .tabbar {
       display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
@@ -214,6 +237,7 @@
   <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M7 7l10 10M17 7 7 17"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></g></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
   <symbol id="i-swap" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
@@ -305,17 +329,25 @@
     <div class="verify">
       <div class="card">
         <dl class="facts">
-          <div><dt>Agent wallet on Celo</dt><dd><a class="mono" id="agent-link" href="#">loading</a></dd></div>
+          <div><dt>Agent wallet</dt><dd><a class="mono" id="agent-link" href="#">loading</a><button class="copy" type="button" data-copy="" id="agent-copy" aria-label="Copy wallet address"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
           <div><dt>ERC-8004 identity</dt><dd id="agent-id">not registered yet</dd></div>
-          <div><dt>Attribution tag on every transaction</dt><dd class="mono">celo_10e86a43fdc3</dd></div>
-          <div><dt>Where the agent runs</dt><dd><a href="https://github.com/Plutoski/ile/actions/workflows/agent.yml">GitHub Actions run history</a></dd></div>
+          <div><dt>Attribution tag</dt><dd><span class="mono">celo_10e86a43fdc3</span><button class="copy" type="button" data-copy="celo_10e86a43fdc3" aria-label="Copy attribution tag"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
+          <div><dt>Network</dt><dd>Celo mainnet</dd></div>
+          <div><dt>Runs on</dt><dd><a href="https://github.com/Plutoski/ile/actions/workflows/agent.yml">GitHub Actions</a></dd></div>
         </dl>
       </div>
-      <div class="card">
-        <p style="margin:0"><strong>Rebuild every payment from the blockchain</strong></p>
-        <p class="sub" style="margin-top:0.25rem">No keys needed. It checks each transaction's sender, tag and amounts.</p>
-<pre>git clone https://github.com/Plutoski/ile
+      <div class="card cmd">
+        <p class="cmd-title">Rebuild every payment from the blockchain</p>
+        <p class="sub" style="margin-top:0.25rem">No keys needed. For each transaction it checks the sender, the attribution tag and the amounts.</p>
+        <div class="code">
+          <div class="code-bar"><span>Terminal</span><button class="copy" type="button" data-copy-from="cmd" aria-label="Copy commands"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></div>
+<pre id="cmd">git clone https://github.com/Plutoski/ile
 cd ile && npm ci && npm run verify</pre>
+        </div>
+        <a class="proof-run" href="https://github.com/Plutoski/ile/actions/runs/45724688085/job/139591444690" rel="noopener">
+          <span class="icon paid" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
+          <span><strong>See a passing check on GitHub</strong><span class="meta">The same command, already run by GitHub Actions</span></span>
+        </a>
       </div>
     </div>
   </section>
@@ -502,9 +534,24 @@ const spread = (p) => (p.referenceRate ? ((p.rate - p.referenceRate) / p.referen
 
   // Identity
   const a = document.getElementById("agent-link");
-  a.href = CELOSCAN + "/address/" + agent; a.textContent = agent;
-  if (identity?.agentId) document.getElementById("agent-id").replaceChildren(link(CELOSCAN + "/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/" + identity.agentId, "Agent #" + identity.agentId + " on the Celo identity registry"));
+  a.href = CELOSCAN + "/address/" + agent; a.textContent = short(agent); a.title = agent;
+  document.getElementById("agent-copy").dataset.copy = agent;
+  if (identity?.agentId) document.getElementById("agent-id").replaceChildren(link(CELOSCAN + "/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/" + identity.agentId, "Agent #" + identity.agentId));
 })();
+
+// Copy buttons
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest(".copy");
+  if (!b) return;
+  const text = b.dataset.copyFrom ? document.getElementById(b.dataset.copyFrom).textContent : b.dataset.copy;
+  try {
+    await navigator.clipboard.writeText(text);
+    const label = b.getAttribute("aria-label");
+    b.classList.add("done"); b.setAttribute("aria-label", "Copied");
+    b.querySelector("use").setAttribute("href", "#i-check");
+    setTimeout(() => { b.classList.remove("done"); b.setAttribute("aria-label", label); b.querySelector("use").setAttribute("href", "#i-copy"); }, 1600);
+  } catch { /* clipboard blocked: the text is still selectable */ }
+});
 
 // Navigation: highlight the section in view, and edge the top bar once scrolled.
 const topbar = document.getElementById("top");
