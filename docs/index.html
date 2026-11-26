@@ -246,21 +246,22 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
         <div><dt>Bills paid</dt><dd id="f-count">0 of 0</dd></div>
         <div><dt>Rate paid</dt><dd id="f-rate">None yet</dd></div>
         <div><dt>Spent, fees included</dt><dd id="f-usd">$0.00</dd></div>
-        <div><dt>Left in the agent</dt><dd id="f-bal">Checking</dd></div>
+        <div><dt>Left in the agent</dt><dd id="f-bal">Checking Celo</dd></div>
       </dl>
-      <p class="ledger-foot">Read from the ledger and from Celo when you opened this page.</p>
+      <p class="ledger-foot">The dollars sit as USD₮ in the agent's own wallet on Celo. AJ tops it up. Figures are read from the ledger and from Celo when you open this page.</p>
     </div>
   </div>
   <div class="adire" aria-hidden="true"></div>
 </div>
 
 <main class="wrap">
+  <noscript><p style="margin:2rem 0 0">This page fills in its figures with JavaScript. Without it, read the raw data: <a href="https://github.com/Plutoski/ile/blob/main/data/ledger.json">the ledger</a> and <a href="https://github.com/Plutoski/ile/blob/main/household.json">the household file</a>.</p></noscript>
   <section id="bills" aria-labelledby="h-bills">
     <div class="head">
       <h2 id="h-bills">This cycle's bills</h2>
       <p>Each bill is paid on its date, Lagos time. The agent runs every four hours and pays whatever is due.</p>
     </div>
-    <ol class="timeline" id="timeline"><li class="stop"><span class="who">Loading the household</span></li></ol>
+    <ol class="timeline" id="timeline"><li class="stop"><span class="who">Loading the household.</span></li></ol>
   </section>
 
   <section id="payments" aria-labelledby="h-payments">
@@ -271,7 +272,7 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
     <table class="book">
       <colgroup><col style="width:15%"><col><col style="width:12%"><col style="width:10%"><col style="width:17%"><col style="width:17%"></colgroup>
       <thead><tr><th>Paid</th><th>Bill</th><th class="r">Naira</th><th class="r">Cost</th><th class="r">Rate</th><th>Proof on Celo</th></tr></thead>
-      <tbody id="book"><tr><td class="empty" colspan="6">No payments yet.</td></tr></tbody>
+      <tbody id="book"><tr><td class="empty" colspan="6">Loading payments from the ledger.</td></tr></tbody>
     </table>
     <div id="notes"></div>
   </section>
@@ -293,7 +294,7 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
   <section id="rules" aria-labelledby="h-rules">
     <div class="head">
       <h2 id="h-rules">Rules it can't break</h2>
-      <p>These are checked in code before any money moves. If one fails, the agent cancels and nothing is sent.</p>
+      <p>These are checked in the agent's code before any money moves. They are not enforced by a smart contract, but you can read every one in <a href="https://github.com/Plutoski/ile/tree/main/src">the source code</a>. If one fails, the agent cancels and nothing is sent.</p>
     </div>
     <dl class="rules" id="rule-list"></dl>
   </section>
@@ -306,8 +307,10 @@ const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load
     <div class="verify">
       <dl class="facts">
         <div><dt>Agent wallet</dt><dd><a class="mono" id="agent-link" href="#">0x2E5b…eB51</a><button class="copy" type="button" id="agent-copy" data-copy="0x2E5b3E46Db5d842EF5be17867900C428E635eB51" aria-label="Copy wallet address"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
-        <div><dt>ERC-8004 identity</dt><dd id="agent-id">Not registered yet</dd></div>
+        <div><dt>ERC-8004 identity</dt><dd id="agent-id"><a href="https://celoscan.io/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/10136">Agent #10136</a></dd></div>
         <div><dt>Attribution tag</dt><dd><span class="mono">celo_10e86a43fdc3</span><button class="copy" type="button" data-copy="celo_10e86a43fdc3" aria-label="Copy attribution tag"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
+        <div><dt>Where the money sits</dt><dd>In the agent wallet</dd></div>
+        <div><dt>Who can move it</dt><dd>One key, held by AJ and the agent</dd></div>
         <div><dt>Network</dt><dd>Celo mainnet</dd></div>
         <div><dt>Runs on</dt><dd><a href="https://github.com/Plutoski/ile/actions/workflows/agent.yml">GitHub Actions</a></dd></div>
       </dl>

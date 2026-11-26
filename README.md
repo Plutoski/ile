@@ -80,6 +80,12 @@ From [`household.json`](household.json), enforced in [`src/policy.ts`](src/polic
 - The agent approves and calls **Textile's reactor and nothing else**, for the exact amount of each swap.
 - It only runs with **its own key**: it refuses to start if the configured key belongs to any other wallet.
 
+These rules live in the agent's code, not in a smart contract.
+
+## Where the money sits
+
+The family's dollars sit as USD₮ in the agent's own wallet on Celo, [`0x2E5b…eB51`](https://celoscan.io/address/0x2E5b3E46Db5d842EF5be17867900C428E635eB51). One private key can move them. AJ holds it, and the agent uses it from a GitHub Actions secret. AJ tops the wallet up when it runs low.
+
 ## A note on the rate
 
 The free reference sources track the CBN's official rate, about ₦1,360 per dollar in late November 2026. Textile paid ₦1,440 per dollar, which matches Nigeria's street rate that week. The street rate is about 6% above the official one. Ilé delivered naira at the street rate, roughly 6% more than the official rate. It does not beat the market.

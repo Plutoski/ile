@@ -1,0 +1,24 @@
+# Ilé
+
+> An agent that pays a Nigerian family's household bills in naira on their due dates. It holds USD₮ in its own wallet on Celo, converts each bill to cNGN through a Textile FX request-for-quote, and sends the cNGN to the family member's wallet. Built for Celo's Agents Open for Business hackathon, Stablecoin Corridors track.
+
+The page at https://ile-docs.vercel.app fills in with JavaScript. The same data is available as plain JSON:
+
+- [Ledger](https://raw.githubusercontent.com/Plutoski/ile/main/data/ledger.json): every payment with its swap and transfer transaction hashes, plus refusals and failures
+- [Household](https://raw.githubusercontent.com/Plutoski/ile/main/household.json): the bills, the recipients' wallets and the spending rules
+- [Identity](https://raw.githubusercontent.com/Plutoski/ile/main/data/identity.json): the ERC-8004 registration
+
+## Facts
+
+- Agent wallet: 0x2E5b3E46Db5d842EF5be17867900C428E635eB51 (Celo mainnet, chain 42220)
+- ERC-8004 identity: agent 10136 on the identity registry 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
+- Registration file: https://ile-docs.vercel.app/agent.json
+- Attribution tag on every transaction: celo_10e86a43fdc3 (ERC-8021)
+- Custody: the USD₮ sits in the agent wallet. One private key can move it. AJ holds it, and the agent uses it from a GitHub Actions secret.
+- Rules (enforced in the agent's code, not a smart contract): at most $3 per bill and $10 per month, never more than 3% below the CBN official rate, only the family's listed wallets, only Textile's swap contract, never pays twice.
+
+## Check it
+
+- [Source code](https://github.com/Plutoski/ile)
+- Rebuild every payment from the chain: `git clone https://github.com/Plutoski/ile && cd ile && npm ci && npm run verify`
+- [Agent runs on GitHub Actions](https://github.com/Plutoski/ile/actions/workflows/agent.yml)
