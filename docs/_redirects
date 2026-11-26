@@ -1,0 +1,2 @@
+/.well-known/agent.json /agent.json 200
+/.well-known/agent-registration.json /agent.json 200
