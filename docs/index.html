@@ -7,9 +7,23 @@
 <meta name="description" content="Ilé is an agent that pays a Nigerian family's bills in cNGN from US dollars, converting on Textile FX on Celo. Every payment is public and checkable.">
 <meta name="theme-color" content="#151C40">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+<link rel="preconnect" href="https://forno.celo.org" crossorigin>
+<script>
+// Start fetching the household and ledger before anything else loads, so the page fills in sooner.
+const RAW = location.hostname === "localhost" ? "/" : "https://raw.githubusercontent.com/Plutoski/ile/main/";
+async function load(path) {
+  try {
+    const r = await fetch(RAW + path + "?t=" + Math.floor(Date.now() / 60000), { cache: "no-store" });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+const DATA = Promise.all([load("household.json"), load("data/ledger.json"), load("data/identity.json")]);
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
 <style>
   :root {
     --night: #151C40;      /* account card, nav text */
@@ -366,7 +380,6 @@ cd ile && npm ci && npm run verify</pre>
 
 <script>
 // Data lives in the repo; the agent commits its ledger after every run.
-const RAW = location.hostname === "localhost" ? "/" : "https://raw.githubusercontent.com/Plutoski/ile/main/";
 const CELOSCAN = "https://celoscan.io";
 const USDT = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
 const ngn = (n) => "₦" + Math.round(n).toLocaleString("en-NG");
@@ -394,13 +407,6 @@ const fmtWhen = (iso) => new Date(iso).toLocaleString("en-GB", { timeZone: "Afri
 const CATEGORY_ICON = { utilities: "i-bolt", communication: "i-signal", transport: "i-bus", household: "i-basket", airtime: "i-phone" };
 const billIcon = (b) => (/airtime/i.test(b?.label ?? "") ? "i-phone" : CATEGORY_ICON[b?.category] ?? "i-basket");
 
-async function load(path) {
-  try {
-    const r = await fetch(RAW + path + "?t=" + Math.floor(Date.now() / 60000), { cache: "no-store" });
-    return r.ok ? r.json() : null;
-  } catch { return null; }
-}
-
 // Live USD₮ balance of the agent, read straight from Celo. Hidden quietly if the node can't be reached.
 async function usdtBalance(addr) {
   try {
@@ -423,7 +429,7 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
 const spread = (p) => (p.referenceRate ? ((p.rate - p.referenceRate) / p.referenceRate) * 100 : null);
 
 (async () => {
-  const [household, ledger, identity] = await Promise.all([load("household.json"), load("data/ledger.json"), load("data/identity.json")]);
+  const [household, ledger, identity] = await DATA;
   const now = new Date();
   const all = ledger?.payments ?? [];
   const payments = all.filter((p) => p.status === "paid").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
