@@ -68,7 +68,7 @@ The household lives in one file, [`household.json`](household.json): who the rec
 
 Each step is saved before the next one starts. If a run stops between buying and delivering, the next run finds the bill marked *bought* and only delivers. A bill is never bought twice.
 
-No language model touches money. The agent is plain code with fixed rules.
+The agent is plain code with fixed rules. There is no language model in it.
 
 ## Rules it cannot break
 
