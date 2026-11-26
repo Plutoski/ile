@@ -42,7 +42,7 @@
   a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--adire); outline-offset: 3px; border-radius: 8px; }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
   .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.9em; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-variant-numeric: normal; } /* this font's tabular digits are slab-style on macOS Chrome */
 
   /* Top bar */
   .top { position: sticky; top: 0; z-index: 20; background: rgba(245, 246, 250, 0.86); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid transparent; transition: border-color 200ms; }
