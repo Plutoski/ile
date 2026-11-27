@@ -1,6 +1,6 @@
-import type { Address } from "viem";
+import { getAddress, type Address, type Hash } from "viem";
 import type { ChainOps } from "./chain.js";
-import { TEXTILE, TOKENS } from "./config.js";
+import { NEVER_LANDED_MS, TEXTILE, TOKENS } from "./config.js";
 import { periodOf, type Bill, type Household } from "./household.js";
 import { findPayment, recordDecision, usdtSpentInMonth, type Ledger, type Payment } from "./ledger.js";
 import { checkQuote, fmtUsdt } from "./policy.js";
@@ -54,14 +54,34 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
   if (existing?.status === "paid") return { kind: "skipped", reason: "already paid this period" };
 
   try {
-    // A previous run bought the naira but stopped before sending it: finish that, never buy twice.
+    // A previous run broadcast a swap for this bill. Finish from what the chain says it did; never buy twice.
     if (existing?.status === "swapped") {
-      log(`resume ${bill.id}: cNGN already bought in rfq ${existing.rfqId}, sending it now`);
+      const swap = await chain.receiptOf(existing.txs.swap, TOKENS.CNGN);
+      const neverLanded = !swap && neverLandedSince(existing.sentAt?.swap ?? existing.createdAt, now());
+      if (!swap && !neverLanded) return fail(`swap ${existing.txs.swap} is not on chain yet; the next run checks again`);
+      if (neverLanded || !swap!.ok) {
+        ledger.payments.splice(ledger.payments.indexOf(existing), 1);
+        await deps.persist();
+        const what = neverLanded ? "never landed" : "reverted";
+        return fail(`swap ${existing.txs.swap} ${what}, so nothing was bought; the next run buys again`);
+      }
+      if (swap!.received < BigInt(existing.cngnAmount)) {
+        return fail(`swap ${existing.txs.swap} delivered ${swap!.received} of ${existing.cngnAmount} cNGN; check it on celoscan, the agent will not buy this bill again`);
+      }
+      log(`resume ${bill.id}: cNGN already bought in ${existing.txs.swap}, sending it now`);
       return await deliver(existing, recipient.address, deps);
     }
 
     const cngnDecimals = await chain.decimals(TOKENS.CNGN);
     const buyAmount = BigInt(bill.amountNgn) * 10n ** BigInt(cngnDecimals);
+
+    // Backstop: naira in the wallet that no recorded purchase explains means a swap went unrecorded.
+    // Buying again would spend twice; a person should adopt that swap instead.
+    const owed = ledger.payments.filter((p) => p.status === "swapped").reduce((sum, p) => sum + BigInt(p.cngnAmount), 0n);
+    const held = await chain.balance(TOKENS.CNGN);
+    if (held - owed >= buyAmount) {
+      return fail(`agent holds ${held} cNGN atomic that no recorded payment explains, enough for this bill; a swap may be unrecorded. Find it on celoscan and run "pay ${bill.id}:<swapHash>" instead of buying again`);
+    }
 
     const ref = await deps.reference();
     if (!ref && !deps.allowNoReference) return skip("no trustworthy USD/NGN reference rate right now; will retry next run");
@@ -118,22 +138,28 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
       return fail("quote expired while the approval confirmed; next run will re-quote");
     }
 
-    const swapHash = await chain.send({ to: firm.transactions.swap.to, data: firm.transactions.swap.data });
-    // Read the delivery from the swap's own receipt. A balance read here can hit a node one block behind.
-    const received = await chain.receivedIn(TOKENS.CNGN, swapHash);
-    log(`swapped: ${swapHash} (+${received} cNGN atomic)`);
-    if (received < buyAmount) throw new Error(`swap ${swapHash} delivered ${received} cNGN, expected ${buyAmount}; check it on celoscan before rerunning`);
-
+    // Record the swap the moment it is broadcast. If its confirmation is lost, the next run
+    // finds the hash and checks the chain instead of buying again.
     const stamp = now().toISOString();
     const payment: Payment = {
       billId: bill.id, period, recipientId: recipient.id, recipient: recipient.address,
       amountNgn: bill.amountNgn, usdtSpent: takerPays.toString(), usdtFee: firm.quote.feeAmount,
       cngnAmount: buyAmount.toString(), rate, referenceRate: ref?.rate ?? null, rfqId: firm.rfqId,
-      txs: { ...(approveHash ? { approve: approveHash } : {}), swap: swapHash },
+      txs: { ...(approveHash ? { approve: approveHash } : {}), swap: "0x" },
       status: "swapped", createdAt: stamp, updatedAt: stamp,
     };
-    ledger.payments.push(payment);
-    await deps.persist(); // the naira is bought: from here on, a rerun only delivers it
+    const swapHash = await chain.send({ to: firm.transactions.swap.to, data: firm.transactions.swap.data }, async (hash) => {
+      payment.txs.swap = hash;
+      payment.sentAt = { swap: now().toISOString() };
+      ledger.payments.push(payment);
+      await deps.persist();
+    });
+    // Read the delivery from the receipt the confirmation already holds. A balance read here can hit a lagging node.
+    const received = (await chain.receiptOf(swapHash, TOKENS.CNGN))?.received ?? 0n;
+    log(`swapped: ${swapHash} (+${received} cNGN atomic)`);
+    if (received < buyAmount) {
+      throw new Error(`swap ${swapHash} delivered ${received} of ${buyAmount} cNGN; recorded, and the agent will not buy this bill again`);
+    }
 
     await deps.textile.submit(firm.rfqId, firm.claimToken, swapHash)
       .catch((e) => log(`warn: could not report swap to Textile (${(e as Error).message}); settlement is unaffected`));
@@ -148,22 +174,66 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
 }
 
 /**
- * Send bought naira to the recipient. Right after a swap we already know the
- * cNGN arrived (from the receipt), so we skip a balance read that could be stale.
- * When resuming a stopped run, check the balance first.
+ * Send bought naira to the recipient recorded at purchase. The transfer hash is
+ * saved the moment it is broadcast; a rerun checks that hash before sending again.
+ * Right after a swap the receipt proves the cNGN arrived, so the balance read is skipped.
  */
 async function deliver(payment: Payment, to: Address, deps: PayDeps, justSwapped = false): Promise<PayOutcome> {
   const now = deps.now ?? (() => new Date());
+  const { chain } = deps;
+  const markPaid = async (hash: Hash): Promise<PayOutcome> => {
+    payment.txs.transfer = hash;
+    payment.status = "paid";
+    payment.updatedAt = now().toISOString();
+    await deps.persist();
+    deps.log?.(`paid ${payment.billId}: ₦${payment.amountNgn} to ${payment.recipient} in ${hash}`);
+    return { kind: "paid", payment };
+  };
+
+  // A transfer already broadcast decides first: if it landed, the bill is paid, whatever the household file says now.
+  let pinned: number | undefined;
+  if (payment.txs.transfer) {
+    for (const earlier of payment.earlierTransfers ?? []) {
+      if ((await chain.receiptOf(earlier, TOKENS.CNGN))?.ok) return markPaid(earlier);
+    }
+    const sent = await chain.receiptOf(payment.txs.transfer, TOKENS.CNGN);
+    if (sent?.ok) return markPaid(payment.txs.transfer);
+    if (!sent && !neverLandedSince(payment.sentAt?.transfer ?? payment.updatedAt, now())) {
+      throw new Error(`transfer ${payment.txs.transfer} is not on chain yet; the next run checks again`);
+    }
+    // No receipt after the wait. A transfer has no deadline, so one stuck in a mempool could still land.
+    // If its nonce is still free, the resend takes that same nonce: at most one of the two can ever land.
+    const n = payment.transferNonce;
+    if (!sent && n !== undefined && !(await chain.nonceUsed(n))) {
+      pinned = n;
+      payment.earlierTransfers = [...(payment.earlierTransfers ?? []), payment.txs.transfer];
+    } else {
+      delete payment.earlierTransfers; // the nonce went to another transaction, so none of these can land
+    }
+    delete payment.txs.transfer;
+    await deps.persist();
+  }
+
+  if (getAddress(to) !== getAddress(payment.recipient)) {
+    throw new Error(`the household file now gives ${to}, but the naira was bought for ${payment.recipient}; refusing to guess which address is right`);
+  }
+
   const amount = BigInt(payment.cngnAmount);
   if (!justSwapped) {
-    const held = await deps.chain.balance(TOKENS.CNGN);
+    const held = await chain.balance(TOKENS.CNGN);
     if (held < amount) throw new Error(`agent holds ${held} cNGN, needs ${amount} to deliver ${payment.billId}`);
   }
-  const hash = await deps.chain.transfer(TOKENS.CNGN, to, amount);
-  payment.txs.transfer = hash;
-  payment.status = "paid";
-  payment.updatedAt = now().toISOString();
-  await deps.persist();
-  deps.log?.(`paid ${payment.billId}: ₦${payment.amountNgn} to ${to} in ${hash}`);
-  return { kind: "paid", payment };
+  const hash = await chain.transfer(TOKENS.CNGN, payment.recipient, amount, async (h, nonce) => {
+    payment.txs.transfer = h;
+    payment.transferNonce = nonce;
+    payment.sentAt = { ...payment.sentAt, transfer: now().toISOString() };
+    payment.updatedAt = now().toISOString();
+    await deps.persist();
+  }, pinned);
+  return markPaid(hash);
+}
+
+/** True once a recorded transaction has gone unseen long enough that it cannot have landed. */
+function neverLandedSince(sentAt: string, now: Date): boolean {
+  return now.getTime() - Date.parse(sentAt) > NEVER_LANDED_MS;
 }

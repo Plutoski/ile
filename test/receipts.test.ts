@@ -69,6 +69,7 @@ describe("adopting a swap that was never recorded", () => {
     const h = household();
     adoptSwap({ ledger, household: h, bill: h.bills[0]!, agent: AGENT, swap: evidence(), cngnDecimals: 6, now });
     const chain = fakeChain({ usdt: 8_000000n, cngn: 3000_000000n });
+    chain.receipts.set(ledger.payments[0]!.txs.swap, { ok: true, received: 3000_000000n });
     const requestQuote = vi.fn();
     const out = await payBill(h.bills[0]!, h, {
       chain, ledger, persist: async () => {}, now: () => now, reference: async () => ({ rate: 1400, sources: [] }),

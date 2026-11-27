@@ -1,15 +1,15 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import { formatUnits, isHex, parseUnits, type Hex } from "viem";
+import { formatUnits, isHex, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { makeChain, makePublicClient } from "./chain.js";
 import { AGENT_ADDRESS, EXPLORER_TX, TOKENS, USDT_DECIMALS } from "./config.js";
-import { dueDateOf, isDue, lagosDate, parseHousehold, periodOf, type Household } from "./household.js";
+import { dueDateOf, isDue, lagosDate, lagosMonth, parseHousehold, periodOf, type Household } from "./household.js";
 import { adoptSwap } from "./adopt.js";
 import { registerAgent, setAgentURI } from "./identity.js";
-import { isSettled, loadLedger, saveLedger, usdtSpentInMonth } from "./ledger.js";
+import { isSettled, loadLedger, mergeLedgers, saveLedger, usdtSpentInMonth } from "./ledger.js";
 import { payBill } from "./payout.js";
-import { effectiveRate, fmtUsdt } from "./policy.js";
+import { checkPrice, fmtUsdt } from "./policy.js";
 import { fetchReferenceRate } from "./rate.js";
 import { TextileClient } from "./textile.js";
 import { verifyLedger } from "./verify.js";
@@ -98,15 +98,23 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
       const unpaid = h.bills.filter((b) => b.active && !isSettled(ledger)(b.id, periodOf(b, now)));
       const [dec, ref] = await Promise.all([chain.decimals(TOKENS.CNGN), fetchReferenceRate()]);
       log(`dry run: pricing ${unpaid.length} unpaid bill(s); official rate ${ref ? `₦${ref.rate.toFixed(2)}/$ from ${ref.sources.map((s) => s.name).join(" + ")}` : "unavailable"}`);
+      // Bills due in the same Lagos month share its cap, so count each one the dry run would pay.
+      const committed = new Map<string, bigint>([[lagosMonth(now), usdtSpentInMonth(ledger, now)]]);
       for (const b of unpaid) {
+        const month = dueDateOf(b, now).slice(0, 7);
         const p = await textile.preview({ sellToken: TOKENS.USDT, buyToken: TOKENS.CNGN, buyAmount: BigInt(b.amountNgn) * 10n ** BigInt(dec) });
         if (p.status !== "preview" || !p.takerPays) { log(`  ${b.id}: no price (${p.status})`); continue; }
         const cost = BigInt(p.takerPays);
-        const rate = effectiveRate(BigInt(b.amountNgn) * 10n ** BigInt(dec), dec, cost);
-        const spread = ref ? ((ref.rate - rate) / ref.rate) * 100 : null;
-        const verdict = cost > parseUnits(String(h.policy.maxUsdtPerPayout), USDT_DECIMALS) ? "OVER per-bill cap"
-          : spread !== null && spread > h.policy.maxSpreadPct ? `REFUSE (${spread.toFixed(2)}% below official)` : "would pay";
-        log(`  ${b.id.padEnd(20)} ₦${b.amountNgn} ≈ ${fmtUsdt(cost)} USD₮ at ₦${rate.toFixed(2)}/$${spread === null ? "" : ` (${spread >= 0 ? "-" : "+"}${Math.abs(spread).toFixed(2)}% vs official)`} → ${verdict}`);
+        // The same money rules a live payment must pass, monthly cap included.
+        const v = checkPrice({
+          takerPays: cost, cngnAtomic: BigInt(b.amountNgn) * 10n ** BigInt(dec), cngnDecimals: dec,
+          policy: h.policy, spentThisMonth: committed.get(month) ?? 0n, referenceRate: ref?.rate ?? null,
+        });
+        if (v.ok) committed.set(month, (committed.get(month) ?? 0n) + cost);
+        const verdict = v.ok
+          ? `would pay at ₦${v.rate.toFixed(2)}/$${v.spreadPct === null ? "" : ` (${v.spreadPct <= 0 ? "+" : "-"}${Math.abs(v.spreadPct).toFixed(2)}% vs official)`}`
+          : `REFUSE: ${v.reason}`;
+        log(`  ${b.id.padEnd(20)} ₦${b.amountNgn} ≈ ${fmtUsdt(cost)} USD₮ → ${verdict}`);
       }
       return;
     }
@@ -193,6 +201,14 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     }
     await writeFile(IDENTITY_FILE, JSON.stringify({ ...identity, agentURI, uriTx: hash }, null, 2) + "\n");
     log(`agent #${identity.agentId} now points to ${agentURI}: ${EXPLORER_TX(hash)}`);
+  },
+
+  /** Combine two copies of the ledger into data/ledger.json, losing nothing either recorded. Needs no key. */
+  async "merge-ledger"([upstream, mine]) {
+    if (!upstream || !mine) throw new Error("usage: merge-ledger <upstream.json> <mine.json>");
+    const merged = mergeLedgers(await loadLedger(upstream), await loadLedger(mine));
+    await saveLedger(LEDGER_FILE, merged);
+    log(`merged ledgers: ${merged.payments.length} payments, ${merged.decisions.length} decisions`);
   },
 
   /** Check every ledger transaction against the chain. Needs no key. */

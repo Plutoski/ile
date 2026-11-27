@@ -68,7 +68,7 @@ The household lives in one file, [`household.json`](household.json): who the rec
 6. **Swap, then record.** The agent sends Textile's swap transaction and reads what it received from the swap's own receipt. The payment is saved as *bought* before anything else happens.
 7. **Deliver.** It sends the cNGN to the recipient and marks the bill *paid*.
 
-Each step is saved before the next one starts. If a run stops between buying and delivering, the next run finds the bill marked *bought* and only delivers. A bill is never bought twice.
+Each transaction's hash is saved the moment it is broadcast, before the agent waits for it to be mined. If a run stops at any point, the next run checks those hashes on chain before doing anything new. A swap that went through is only delivered, a swap that reverted is bought fresh, and a transfer that went through is marked paid without sending again. A recorded transaction with no receipt 30 minutes after it was sent is redone. A resent transfer reuses the first one's nonce, so if the first was only delayed, at most one of the two can land. As a last guard, the agent will not buy if its wallet already holds naira that no recorded payment explains.
 
 The agent is plain code with fixed rules. There is no language model in it.
 
@@ -107,6 +107,13 @@ The fix has three parts:
 - The agent now reads what a swap delivered from the swap's own receipt, not from a follow-up balance read.
 - A new step adopts a completed swap after checking it on-chain. The swap must come from the agent, go to Textile, carry the tag, and deliver exactly the bill amount. The agent then records it as *bought* without buying again. Running `pay halimah-electricity:<swapHash>` did this and delivered the naira.
 - A regression test in [`test/receipts.test.ts`](test/receipts.test.ts) reproduces the stale read.
+
+**Hardened after an independent review on 27 November.** Two reviewers read the whole codebase before the remaining payments. They found ways a lost confirmation, a queued run or a failed ledger save could make the agent buy or pay twice. Each one is now fixed and covered by a test in [`test/payout.test.ts`](test/payout.test.ts) or [`test/tagging.test.ts`](test/tagging.test.ts):
+
+- Transaction hashes are recorded the moment they go out, even if the node never answers, and a later run checks them on chain before acting (see *How one bill is paid*).
+- Receipts from a confirmation are kept, not fetched again from a node that may be behind.
+- Nonces count up within a run, so a lagging node cannot hand out one already used.
+- Every run checks out the latest ledger. Saving it retries until it lands, and if someone else changed it meanwhile, the two copies are combined so neither loses a payment.
 
 **Known limits**
 

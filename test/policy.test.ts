@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkQuote, effectiveRate } from "../src/policy.js";
+import { checkPrice, checkQuote, effectiveRate } from "../src/policy.js";
 import { account, CNGN_DECIMALS, firmQuote, household } from "./fixtures.js";
 
 const now = Date.parse("2026-12-05T10:00:00Z");
@@ -70,5 +70,19 @@ describe("quote checks", () => {
   it("computes the effective rate with the fee included", () => {
     expect(effectiveRate(2000_000000n, 6, 1_400000n)).toBeCloseTo(1428.571, 2);
     expect(effectiveRate(1n, 6, 0n)).toBe(0);
+  });
+});
+
+describe("the dry run's price check", () => {
+  const policy = household().policy;
+  const base = { cngnAtomic: 2000_000000n, cngnDecimals: CNGN_DECIMALS, policy, referenceRate: 1400 };
+
+  it("refuses a bill the monthly cap would block, like a live payment", () => {
+    const v = checkPrice({ ...base, takerPays: 1_400000n, spentThisMonth: 9_000000n });
+    expect(v).toMatchObject({ ok: false, reason: expect.stringContaining("monthly cap") });
+  });
+
+  it("passes the same bill when the month has room", () => {
+    expect(checkPrice({ ...base, takerPays: 1_400000n, spentThisMonth: 0n })).toMatchObject({ ok: true });
   });
 });

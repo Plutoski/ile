@@ -46,7 +46,30 @@ export function checkQuote(i: QuoteCheckInput): Verdict {
   if (BigInt(swap.value || "0") !== 0n) return { ok: false, reason: "swap would send native CELO" };
   if (BigInt(q.buyAmount) !== i.requestedCngn) return { ok: false, reason: `quote delivers ${q.buyAmount}, requested ${i.requestedCngn}` };
 
-  const takerPays = BigInt(q.takerPays);
+  const expiresAt = Date.parse(q.expiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt - i.now < TEXTILE.expirySafetyMs) {
+    return { ok: false, reason: "quote expires too soon to execute safely" };
+  }
+  return checkPrice({
+    takerPays: BigInt(q.takerPays), cngnAtomic: BigInt(q.buyAmount), cngnDecimals: i.cngnDecimals,
+    policy, spentThisMonth: i.spentThisMonth, referenceRate: i.referenceRate,
+  });
+}
+
+export interface PriceCheckInput {
+  takerPays: bigint;
+  cngnAtomic: bigint;
+  cngnDecimals: number;
+  policy: Policy;
+  /** Atomic USD₮ already committed this month. */
+  spentThisMonth: bigint;
+  /** Official naira per dollar, or null when no reference could be fetched. */
+  referenceRate: number | null;
+}
+
+/** The money rules: per-bill cap, monthly cap, and the floor against the official rate. The dry run uses these too. */
+export function checkPrice(i: PriceCheckInput): Verdict {
+  const { takerPays, policy } = i;
   if (takerPays <= 0n) return { ok: false, reason: "quote has no cost, refusing a malformed quote" };
 
   const perPayoutCap = parseUnits(String(policy.maxUsdtPerPayout), USDT_DECIMALS);
@@ -58,12 +81,7 @@ export function checkQuote(i: QuoteCheckInput): Verdict {
     return { ok: false, reason: `would bring this month to ${fmtUsdt(i.spentThisMonth + takerPays)} USD₮, above the ${policy.maxUsdtPerMonth} USD₮ monthly cap` };
   }
 
-  const expiresAt = Date.parse(q.expiresAt);
-  if (!Number.isFinite(expiresAt) || expiresAt - i.now < TEXTILE.expirySafetyMs) {
-    return { ok: false, reason: "quote expires too soon to execute safely" };
-  }
-
-  const rate = effectiveRate(BigInt(q.buyAmount), i.cngnDecimals, takerPays);
+  const rate = effectiveRate(i.cngnAtomic, i.cngnDecimals, takerPays);
   if (i.referenceRate === null) return { ok: true, rate, spreadPct: null };
   const spreadPct = ((i.referenceRate - rate) / i.referenceRate) * 100;
   if (spreadPct > policy.maxSpreadPct) {

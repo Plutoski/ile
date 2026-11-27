@@ -47,3 +47,9 @@ export const USDT_FEE_ADAPTER: Address = "0x0E2A3e05bc9A16F5292A6170456A710cb89C
 export const DEFAULT_RPC_URL = "https://forno.celo.org";
 
 export const EXPLORER_TX = (hash: string) => `https://celoscan.io/tx/${hash}`;
+
+/**
+ * A recorded transaction with no receipt this long after it was sent never landed:
+ * forno nodes lag by seconds, so a mined transaction is visible everywhere well before this.
+ */
+export const NEVER_LANDED_MS = 30 * 60_000;

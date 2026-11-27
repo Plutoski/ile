@@ -396,11 +396,14 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
   const all = ledger?.payments ?? [];
   const payments = all.filter((p) => p.status === "paid").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const recipients = household?.recipients ?? [];
-  const bills = household?.bills ?? [];
+  const bills = (household?.bills ?? []).filter((b) => b.active !== false); // the agent skips inactive bills too
   const person = (id) => recipients.find((r) => r.id === id);
   const billOf = (id) => bills.find((b) => b.id === id);
   const agent = ledger?.agent ?? "0x2E5b3E46Db5d842EF5be17867900C428E635eB51";
-  const isPaid = (b) => all.some((p) => p.billId === b.id && p.period === periodOf(b, now) && p.status === "paid");
+  const paymentOf = (b) => all.find((p) => p.billId === b.id && p.period === periodOf(b, now) && p.status === "paid");
+  const isPaid = (b) => !!paymentOf(b);
+  // A paid bill shows the Lagos day it was paid, which can be before its due date.
+  const shownDate = (b) => { const p = paymentOf(b); return p ? lagosDate(new Date(p.updatedAt)) : dueDate(b, now); };
 
   if (household) {
     const sender = household.sender.match(/^([^(]+)\(([^)]+)\)/);
@@ -412,7 +415,7 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
   // Hero
   const totalNgn = payments.reduce((s, p) => s + p.amountNgn, 0);
   const usdTotal = payments.reduce((s, p) => s + Number(p.usdtSpent) / 1e6, 0);
-  const ordered = [...bills].sort((a, b) => dueDate(a, now).localeCompare(dueDate(b, now)));
+  const ordered = [...bills].sort((a, b) => shownDate(a).localeCompare(shownDate(b)));
   const paidCount = ordered.filter(isPaid).length;
   const next = ordered.find((b) => !isPaid(b));
   document.getElementById("f-ngn").innerHTML = `<span class="cur">₦</span>${Math.round(totalNgn).toLocaleString("en-NG")}`;
@@ -439,7 +442,7 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
     tl.append(el("li", { class: "stop " + cls },
       el("span", { class: "knot", "aria-hidden": "true" }),
       el("div", { class: "body" },
-        el("span", { class: "when" }, dayMonth(dueDate(b, now))),
+        el("span", { class: "when" }, dayMonth(shownDate(b))),
         el("span", { class: "what" }, nb(b.label)),
         el("span", { class: "who" }, who ? `${who.name}, ${who.relation}` : "")),
       el("div", { class: "side" },

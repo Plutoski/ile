@@ -29,7 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # Check out main as it is now, not the commit that triggered the run. A run that waited
+      # behind another must see the ledger that run saved, or it would pay the same bill again.
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -64,5 +68,36 @@ jobs:
           git config user.name "ile-agent"
           git config user.email "ile-agent@users.noreply.github.com"
           git commit -m "ledger: ${{ inputs.command || 'scheduled run' }} ${{ github.run_id }}"
-          git pull --rebase
-          git push
+          # The ledger is the agent's memory of what it paid. Keep trying to save it. If someone else
+          # changed it meanwhile, combine both copies so neither loses a payment; any other clash stops here.
+          for attempt in 1 2 3 4 5; do
+            if ! git pull --rebase; then
+              # The pull failed before a rebase started (a network error): wait and try again.
+              if [ ! -d .git/rebase-merge ] && [ ! -d .git/rebase-apply ]; then sleep $((attempt * 10)); continue; fi
+              others=$(git diff --name-only --diff-filter=U | grep -v -x -E 'data/ledger.json|docs/data/.*' || true)
+              if [ -n "$others" ]; then
+                git rebase --abort
+                echo "::error::the save clashed with changes outside the ledger: $others"
+                exit 1
+              fi
+              if git ls-files -u -- data/ledger.json | grep -q .; then
+                git show :2:data/ledger.json > "$RUNNER_TEMP/upstream.json"
+                git show :3:data/ledger.json > "$RUNNER_TEMP/mine.json"
+                npm run --silent agent -- merge-ledger "$RUNNER_TEMP/upstream.json" "$RUNNER_TEMP/mine.json"
+              fi
+              cp household.json docs/data/household.json
+              for f in data/ledger.json data/identity.json; do
+                if [ -f "$f" ]; then cp "$f" docs/data/; fi
+              done
+              git add data docs/data
+              if ! GIT_EDITOR=true git rebase --continue; then
+                git rebase --abort
+                echo "::error::could not combine the ledgers; check data/ledger.json before the next run"
+                exit 1
+              fi
+            fi
+            if git push; then exit 0; fi
+            sleep $((attempt * 10))
+          done
+          echo "::error::could not save the ledger after 5 attempts; check data/ledger.json before the next run"
+          exit 1

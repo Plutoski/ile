@@ -14,7 +14,7 @@ function fakeChain(opts: { owner?: string; uriAt: (block?: bigint) => string; re
   const chain = {
     agent: AGENT,
     fee: {},
-    confirm: async (h: Hex) => h,
+    confirm: async () => ({ blockNumber: opts.receiptBlock ?? 100n }),
     wallet: { writeContract: async (call: unknown) => { sent.push(call); return TX; } },
     publicClient: {
       readContract: async ({ functionName, blockNumber }: { functionName: string; blockNumber?: bigint }) => {
@@ -22,7 +22,6 @@ function fakeChain(opts: { owner?: string; uriAt: (block?: bigint) => string; re
         if (blockNumber !== undefined && lagging > 0) { lagging--; throw new Error("block is out of range"); }
         return opts.uriAt(blockNumber);
       },
-      getTransactionReceipt: async () => ({ blockNumber: opts.receiptBlock ?? 100n }),
     },
   };
   return { chain: chain as unknown as Parameters<typeof setAgentURI>[0], sent };

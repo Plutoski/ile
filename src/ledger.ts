@@ -29,6 +29,12 @@ export interface Payment {
   referenceRate: number | null;
   rfqId: string;
   txs: { approve?: Hash; swap: Hash; transfer?: Hash };
+  /** When the swap and the transfer were broadcast. A transaction still unseen long after this never landed. */
+  sentAt?: { swap?: string; transfer?: string };
+  /** The transfer's nonce. A resend reuses it, so the old and new transfer can never both land. */
+  transferNonce?: number;
+  /** Earlier transfers sent with that nonce. Any of them may still be the one that lands. */
+  earlierTransfers?: Hash[];
   status: PaymentStatus;
   createdAt: string;
   updatedAt: string;
@@ -96,4 +102,26 @@ export function recordDecision(ledger: Ledger, d: Omit<Decision, "at">, now: Dat
       return seen.has(k) ? false : (seen.add(k), true);
     })
     .reverse();
+}
+
+/**
+ * Combine two copies of the ledger that changed apart, such as two runs that saved at once.
+ * Nothing either copy recorded is lost. A purchase is identified by its swap hash; when both
+ * copies hold it, the one further along wins (paid over bought, a recorded transfer over none).
+ */
+export function mergeLedgers(a: Ledger, b: Ledger): Ledger {
+  const progress = (p: Payment) => (p.status === "paid" ? 2 : p.txs.transfer ? 1 : 0);
+  const payments = new Map<string, Payment>();
+  for (const p of [...a.payments, ...b.payments]) {
+    const seen = payments.get(p.txs.swap);
+    if (!seen || progress(p) > progress(seen)) payments.set(p.txs.swap, p);
+  }
+  const decisions = new Map<string, Decision>();
+  for (const d of [...a.decisions, ...b.decisions]) decisions.set(`${d.at}|${d.billId}|${d.period}|${d.reason}`, d);
+  return {
+    version: 1,
+    agent: a.agent ?? b.agent,
+    payments: [...payments.values()].sort((x, y) => x.createdAt.localeCompare(y.createdAt)),
+    decisions: [...decisions.values()].sort((x, y) => x.at.localeCompare(y.at)),
+  };
 }

@@ -24,8 +24,7 @@ export async function registerAgent(chain: ReturnType<typeof makeChain>, agentUR
   const hash = await chain.wallet.writeContract({
     address: ERC8004.identityRegistry, abi: identityAbi, functionName: "register", args: [agentURI], ...chain.fee,
   });
-  await chain.confirm(hash);
-  const receipt = await chain.publicClient.getTransactionReceipt({ hash });
+  const receipt = await chain.confirm(hash);
   const mint = parseEventLogs({ abi: identityAbi, eventName: "Transfer", logs: receipt.logs })
     .find((l) => l.address.toLowerCase() === ERC8004.identityRegistry.toLowerCase() && l.args.from === zeroAddress);
   if (!mint) throw new Error(`registered in ${hash} but found no mint event; check it on celoscan`);
@@ -49,8 +48,7 @@ export async function setAgentURI(chain: IdentityChain, agentId: bigint, uri: st
     throw new Error(`agent #${agentId} is owned by ${owner}, not the agent wallet ${chain.agent}`);
   }
   const hash = await chain.wallet.writeContract({ ...registry, functionName: "setAgentURI", args: [agentId, uri], ...chain.fee });
-  await chain.confirm(hash);
-  const { blockNumber } = await chain.publicClient.getTransactionReceipt({ hash });
+  const { blockNumber } = await chain.confirm(hash);
   // A node behind the one that saw the receipt answers "block is out of range" until it catches up.
   let after: string | undefined;
   for (let attempt = 1; after === undefined; attempt++) {

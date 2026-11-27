@@ -1,5 +1,5 @@
 import { fromDataSuffix } from "@celo/attribution-tags";
-import { getAddress, type Hash, type PublicClient } from "viem";
+import { TransactionNotFoundError, TransactionReceiptNotFoundError, getAddress, type Hash, type PublicClient } from "viem";
 import { ATTRIBUTION_CODE, TEXTILE, TOKENS } from "./config.js";
 import type { Ledger } from "./ledger.js";
 import { tokenFlows } from "./receipts.js";
@@ -20,7 +20,16 @@ export async function verifyLedger(client: PublicClient, ledger: Ledger): Promis
     const steps = Object.entries(p.txs) as [string, Hash][];
     for (const [step, hash] of steps) {
       const problems: string[] = [];
-      const [tx, receipt] = await Promise.all([client.getTransaction({ hash }), client.getTransactionReceipt({ hash })]);
+      // Only "not found" counts as a failed check; any other error (an RPC outage) stops the run instead of blaming the ledger.
+      const found = await Promise.all([client.getTransaction({ hash }), client.getTransactionReceipt({ hash })]).catch((e: unknown) => {
+        if (e instanceof TransactionNotFoundError || e instanceof TransactionReceiptNotFoundError) return null;
+        throw e;
+      });
+      if (!found) {
+        checks.push({ billId: p.billId, step, hash, ok: false, problems: ["transaction not found on chain"] });
+        continue;
+      }
+      const [tx, receipt] = found;
       if (receipt.status !== "success") problems.push("reverted");
       if (getAddress(tx.from) !== agent) problems.push(`sent by ${tx.from}, not the agent`);
       const tag = fromDataSuffix(tx.input);
@@ -30,7 +39,7 @@ export async function verifyLedger(client: PublicClient, ledger: Ledger): Promis
         // Gas paid in USD₮ shows up as transfers too; tokenFlows leaves those out.
         const paid = tokenFlows(receipt.logs, TOKENS.USDT, agent).sent;
         const got = tokenFlows(receipt.logs, TOKENS.CNGN, agent).received;
-        if (getAddress(tx.to!) !== getAddress(TEXTILE.reactor)) problems.push("swap did not go to Textile's reactor");
+        if (!tx.to || getAddress(tx.to) !== getAddress(TEXTILE.reactor)) problems.push("swap did not go to Textile's reactor");
         if (paid !== BigInt(p.usdtSpent)) problems.push(`USD₮ paid ${paid}, ledger says ${p.usdtSpent}`);
         if (got < BigInt(p.cngnAmount)) problems.push(`cNGN received ${got}, ledger says ${p.cngnAmount}`);
       }
