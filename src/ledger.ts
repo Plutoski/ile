@@ -54,6 +54,8 @@ export interface Ledger {
   agent: Address | null;
   payments: Payment[];
   decisions: Decision[];
+  /** The wallet's transaction count after the agent's latest transaction. A chain ahead of this means the ledger is stale. */
+  lastNonce?: number;
 }
 
 export const emptyLedger = (): Ledger => ({ version: 1, agent: null, payments: [], decisions: [] });
@@ -61,7 +63,12 @@ export const emptyLedger = (): Ledger => ({ version: 1, agent: null, payments: [
 export async function loadLedger(path: string): Promise<Ledger> {
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as Ledger;
-    if (parsed.version !== 1) throw new Error(`unsupported ledger version ${parsed.version}`);
+    if (parsed?.version !== 1) throw new Error(`unsupported ledger version ${parsed?.version}`);
+    // Every later step trusts this shape, so a hand-edited or truncated file stops here.
+    if (!Array.isArray(parsed.payments) || !Array.isArray(parsed.decisions)
+      || parsed.payments.some((p) => typeof p?.billId !== "string" || typeof p.txs?.swap !== "string")) {
+      throw new Error(`${path} is not a valid ledger: payments and decisions must be lists, and every payment needs a billId and a swap hash`);
+    }
     return parsed;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyLedger();
@@ -107,20 +114,27 @@ export function recordDecision(ledger: Ledger, d: Omit<Decision, "at">, now: Dat
 /**
  * Combine two copies of the ledger that changed apart, such as two runs that saved at once.
  * Nothing either copy recorded is lost. A purchase is identified by its swap hash; when both
- * copies hold it, the one further along wins (paid over bought, a recorded transfer over none).
+ * copies hold it, the one further along wins (paid over bought, a recorded transfer over none),
+ * then the one saved later. Every transfer either copy sent is kept, so none can be forgotten.
  */
 export function mergeLedgers(a: Ledger, b: Ledger): Ledger {
   const progress = (p: Payment) => (p.status === "paid" ? 2 : p.txs.transfer ? 1 : 0);
+  const ahead = (p: Payment, q: Payment) => progress(p) - progress(q) || p.updatedAt.localeCompare(q.updatedAt);
   const payments = new Map<string, Payment>();
   for (const p of [...a.payments, ...b.payments]) {
     const seen = payments.get(p.txs.swap);
-    if (!seen || progress(p) > progress(seen)) payments.set(p.txs.swap, p);
+    if (!seen) { payments.set(p.txs.swap, p); continue; }
+    const [win, lose] = ahead(p, seen) > 0 ? [p, seen] : [seen, p];
+    const sent = [...(win.earlierTransfers ?? []), ...(lose.earlierTransfers ?? []), ...(lose.txs.transfer ? [lose.txs.transfer] : [])]
+      .filter((h, i, all) => h !== win.txs.transfer && all.indexOf(h) === i);
+    payments.set(p.txs.swap, sent.length ? { ...win, earlierTransfers: sent } : win);
   }
   const decisions = new Map<string, Decision>();
   for (const d of [...a.decisions, ...b.decisions]) decisions.set(`${d.at}|${d.billId}|${d.period}|${d.reason}`, d);
   return {
     version: 1,
     agent: a.agent ?? b.agent,
+    ...(a.lastNonce !== undefined || b.lastNonce !== undefined ? { lastNonce: Math.max(a.lastNonce ?? 0, b.lastNonce ?? 0) } : {}),
     payments: [...payments.values()].sort((x, y) => x.createdAt.localeCompare(y.createdAt)),
     decisions: [...decisions.values()].sort((x, y) => x.at.localeCompare(y.at)),
   };

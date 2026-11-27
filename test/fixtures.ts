@@ -129,6 +129,7 @@ export function fakeChain(init: { usdt: bigint; cngn?: bigint; allowance?: bigin
       return write("transfer", [to, amount], () => { state.cngn -= amount; return 0n; }, onSent, pinned);
     },
     nonceUsed: async (nonce) => nonce < mined,
+    sentCount: async () => mined,
     receiptOf: async (h) => receipts.get(h) ?? null,
   };
   return chain;

@@ -49,8 +49,14 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
 
   const recipient = household.recipients.find((r) => r.id === bill.recipientId);
   if (!recipient) return skip(`unknown recipient ${bill.recipientId}`);
+  const noteNonce = async (_hash: Hash, nonce: number) => {
+    ledger.lastNonce = Math.max(ledger.lastNonce ?? 0, nonce + 1);
+    await deps.persist();
+  };
 
-  const existing = findPayment(ledger, bill.id, period);
+  // A purchase from an earlier period that was never delivered is finished first, so its naira is never stranded.
+  const existing = findPayment(ledger, bill.id, period)
+    ?? ledger.payments.find((p) => p.billId === bill.id && p.status === "swapped");
   if (existing?.status === "paid") return { kind: "skipped", reason: "already paid this period" };
 
   try {
@@ -70,6 +76,15 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
       }
       log(`resume ${bill.id}: cNGN already bought in ${existing.txs.swap}, sending it now`);
       return await deliver(existing, recipient.address, deps);
+    }
+
+    // A wallet that has sent more than this ledger records means the ledger is out of date
+    // (a run from an old copy, or a save that was lost). Buying from it could pay a bill twice.
+    if (ledger.lastNonce !== undefined) {
+      const sent = await chain.sentCount();
+      if (sent > ledger.lastNonce) {
+        return fail(`the wallet has sent ${sent - ledger.lastNonce} transaction(s) this ledger does not record; make sure data/ledger.json is the latest before paying`);
+      }
     }
 
     const cngnDecimals = await chain.decimals(TOKENS.CNGN);
@@ -124,12 +139,18 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
       return skip(`agent holds ${fmtUsdt(usdtBalance)} USD₮, needs ${fmtUsdt(takerPays)}`);
     }
 
+    // A swap that can still land after the agent has written it off as "never landed" could be bought twice.
+    if (deadlineOf(firm.quote.orderDeadline) - now().getTime() > NEVER_LANDED_MS) {
+      await deps.textile.cancel(firm.rfqId, firm.claimToken).catch(() => {});
+      return skip(`Textile's order stays valid until ${firm.quote.orderDeadline}, longer than the agent waits for a swap`);
+    }
+
     // Approve exactly what this swap needs. USD₮ refuses a non-zero to non-zero change, so reset first.
     let approveHash: `0x${string}` | undefined;
     const allowance = await chain.allowance(TOKENS.USDT, TEXTILE.reactor);
     if (allowance < takerPays) {
-      if (allowance > 0n) await chain.approve(TOKENS.USDT, TEXTILE.reactor, 0n);
-      approveHash = await chain.approve(TOKENS.USDT, TEXTILE.reactor, takerPays);
+      if (allowance > 0n) await chain.approve(TOKENS.USDT, TEXTILE.reactor, 0n, noteNonce);
+      approveHash = await chain.approve(TOKENS.USDT, TEXTILE.reactor, takerPays, noteNonce);
       log(`approved ${fmtUsdt(takerPays)} USD₮ to Textile: ${approveHash}`);
     }
 
@@ -148,11 +169,11 @@ export async function payBill(bill: Bill, household: Household, deps: PayDeps): 
       txs: { ...(approveHash ? { approve: approveHash } : {}), swap: "0x" },
       status: "swapped", createdAt: stamp, updatedAt: stamp,
     };
-    const swapHash = await chain.send({ to: firm.transactions.swap.to, data: firm.transactions.swap.data }, async (hash) => {
+    const swapHash = await chain.send({ to: firm.transactions.swap.to, data: firm.transactions.swap.data }, async (hash, nonce) => {
       payment.txs.swap = hash;
       payment.sentAt = { swap: now().toISOString() };
       ledger.payments.push(payment);
-      await deps.persist();
+      await noteNonce(hash, nonce);
     });
     // Read the delivery from the receipt the confirmation already holds. A balance read here can hit a lagging node.
     const received = (await chain.receiptOf(swapHash, TOKENS.CNGN))?.received ?? 0n;
@@ -226,11 +247,19 @@ async function deliver(payment: Payment, to: Address, deps: PayDeps, justSwapped
   const hash = await chain.transfer(TOKENS.CNGN, payment.recipient, amount, async (h, nonce) => {
     payment.txs.transfer = h;
     payment.transferNonce = nonce;
+    deps.ledger.lastNonce = Math.max(deps.ledger.lastNonce ?? 0, nonce + 1);
     payment.sentAt = { ...payment.sentAt, transfer: now().toISOString() };
     payment.updatedAt = now().toISOString();
     await deps.persist();
   }, pinned);
   return markPaid(hash);
+}
+
+/** Textile's order deadline as epoch ms. It may come as an ISO date, unix seconds or unix ms; NaN if none of these. */
+function deadlineOf(v: string): number {
+  if (!/^\d+$/.test(String(v))) return Date.parse(v);
+  const n = Number(v);
+  return n > 1e12 ? n : n * 1000;
 }
 
 /** True once a recorded transaction has gone unseen long enough that it cannot have landed. */

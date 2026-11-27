@@ -1,6 +1,57 @@
+# dependencies and build output
 node_modules/
+dist/
+build/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# secrets and local env (household.example.json is the template)
 .env
 .env.*
+!.env.example
+*.pem
+*.key
+.secret*
+
+# deploy tool state
+.vercel/
+.wrangler/
+.dev.vars
+.netlify/
+
+# logs and scratch
+*.log
+npm-debug.log*
+logs/
+tmp/
+.tmp/
 *.tmp
-coverage/
+*.bak
+*.orig
+*.swp
+*~
+
+# archives
+*.zip
+*.tar.gz
+*.tgz
+
+# OS and editor files
 .DS_Store
+._*
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.code-workspace
+
+# agent/AI scratch (keep out of the public repo)
+.claude/
+.cursor/
+.audit/
+notes/
+scratch/
+
+# Committed on purpose by the agent workflow, never ignore:
+#   household.json, data/ledger.json, data/identity.json, docs/data/

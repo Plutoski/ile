@@ -63,7 +63,9 @@ jobs:
           for f in data/ledger.json data/identity.json; do
             if [ -f "$f" ]; then cp "$f" docs/data/; fi
           done
-          git add data docs/data
+          # Write the figures into the page itself, so it reads right without JavaScript.
+          npm run --silent agent -- render || echo "::warning::could not render the page; it still fills in with JavaScript"
+          git add data docs/data docs/index.html
           if git diff --cached --quiet; then echo "ledger unchanged"; exit 0; fi
           git config user.name "ile-agent"
           git config user.email "ile-agent@users.noreply.github.com"
@@ -74,7 +76,7 @@ jobs:
             if ! git pull --rebase; then
               # The pull failed before a rebase started (a network error): wait and try again.
               if [ ! -d .git/rebase-merge ] && [ ! -d .git/rebase-apply ]; then sleep $((attempt * 10)); continue; fi
-              others=$(git diff --name-only --diff-filter=U | grep -v -x -E 'data/ledger.json|docs/data/.*' || true)
+              others=$(git diff --name-only --diff-filter=U | grep -v -x -E 'data/ledger.json|docs/data/.*|docs/index.html' || true)
               if [ -n "$others" ]; then
                 git rebase --abort
                 echo "::error::the save clashed with changes outside the ledger: $others"
@@ -89,7 +91,10 @@ jobs:
               for f in data/ledger.json data/identity.json; do
                 if [ -f "$f" ]; then cp "$f" docs/data/; fi
               done
-              git add data docs/data
+              # The page's figures come from the ledger: take main's page and write the merged figures into it.
+              if git ls-files -u -- docs/index.html | grep -q .; then git checkout --ours docs/index.html; fi
+              npm run --silent agent -- render || true
+              git add data docs/data docs/index.html
               if ! GIT_EDITOR=true git rebase --continue; then
                 git rebase --abort
                 echo "::error::could not combine the ledgers; check data/ledger.json before the next run"

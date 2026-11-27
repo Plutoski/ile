@@ -83,7 +83,10 @@ export function parseHousehold(raw: unknown): Household {
     if (s?.kind === "monthly") {
       if (!Number.isInteger(s.day) || s.day < 1 || s.day > 31) errors.push(`${where}.schedule.day must be 1-31`);
     } else if (s?.kind === "once") {
-      if (typeof s.date !== "string" || !DATE.test(s.date) || Number.isNaN(Date.parse(s.date))) errors.push(`${where}.schedule.date must be YYYY-MM-DD`);
+      // Date.parse rolls 2026-02-30 over to March, so the date must read back unchanged.
+      const real = typeof s.date === "string" && DATE.test(s.date) && !Number.isNaN(Date.parse(s.date))
+        && new Date(s.date + "T00:00:00Z").toISOString().slice(0, 10) === s.date;
+      if (!real) errors.push(`${where}.schedule.date must be a real date, YYYY-MM-DD`);
     } else {
       errors.push(`${where}.schedule.kind must be "monthly" or "once"`);
     }
@@ -94,7 +97,8 @@ export function parseHousehold(raw: unknown): Household {
   }
 
   const p = o.policy as Partial<Policy> | undefined;
-  const positive = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v > 0;
+  // A cap must survive becoming a 6-decimal USD₮ amount: 1e-7 rounds to 0 and 1e21 prints as "1e+21".
+  const positive = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v > 0 && /^\d+\.\d+$/.test(v.toFixed(6)) && Number(v.toFixed(6)) > 0;
   if (!p || !positive(p.maxUsdtPerPayout)) errors.push("policy.maxUsdtPerPayout must be a positive number");
   if (!p || !positive(p.maxUsdtPerMonth)) errors.push("policy.maxUsdtPerMonth must be a positive number");
   if (!p || typeof p.maxSpreadPct !== "number" || p.maxSpreadPct < 0 || p.maxSpreadPct > 20) errors.push("policy.maxSpreadPct must be between 0 and 20");

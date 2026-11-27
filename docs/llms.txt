@@ -2,7 +2,7 @@
 
 > An agent that pays a Nigerian family's household bills in naira on their due dates. It holds USD₮ in its own wallet on Celo, converts each bill to cNGN through a Textile FX request-for-quote, and sends the cNGN to the family member's wallet. Built for Celo's Agents Open for Business hackathon, Stablecoin Corridors track.
 
-The page at https://ile-family.pages.dev fills in with JavaScript. The same data is available as plain JSON on the same site, copied there by the agent after every run:
+The page at https://ile-family.pages.dev has its figures written in after every agent run, so it reads without JavaScript. The same data is available as plain JSON on the same site:
 
 - [Ledger](https://ile-family.pages.dev/data/ledger.json): every payment with its swap and transfer transaction hashes, plus refusals and failures
 - [Household](https://ile-family.pages.dev/data/household.json): the bills, the recipients' wallets and the spending rules
@@ -15,6 +15,8 @@ The page at https://ile-family.pages.dev fills in with JavaScript. The same data
 - Registration file: https://ile-family.pages.dev/agent.json (the URI registered on chain), copy at https://ile-docs.vercel.app/agent.json
 - The same page is also at https://ile-docs.vercel.app, where Vercel's DDoS protection may answer scripted requests with a 403 challenge
 - Attribution tag on every transaction: celo_10e86a43fdc3 (ERC-8021)
+- Textile FX reactor (the only contract the agent approves and calls): 0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3
+- First payment, ₦3,000 to Halimah on 26 Nov 2026: approve 0x21f6e836f0f9b3dc2304ea0953c6d94d103eb2ce2640607a782c77dcff64b436, Textile swap 0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802, transfer 0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966
 - Custody: the USD₮ sits in the agent wallet. One private key can move it. AJ holds it, and the agent uses it from a GitHub Actions secret.
 - Rules (enforced in the agent's code, not a smart contract): at most $3 per bill and $10 per month, never more than 3% below the CBN official rate, only the family's listed wallets, only Textile's swap contract, never pays twice.
 

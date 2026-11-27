@@ -25,6 +25,25 @@ describe("merging two copies of the ledger", () => {
     expect(mergeLedgers(bought, sending).payments).toEqual(sending.payments);
   });
 
+  it("at the same progress, keeps the copy saved later and every transfer either copy sent", () => {
+    const first = { ...payment("x", "0xaa", "swapped", "0xt1"), updatedAt: "2026-11-29T00:00:00Z" };
+    const resent = { ...payment("x", "0xaa", "swapped", "0xt2"), updatedAt: "2026-11-29T00:40:00Z", earlierTransfers: ["0xt1" as Payment["txs"]["swap"]] };
+    for (const [a, b] of [[first, resent], [resent, first]]) {
+      const [merged] = mergeLedgers({ ...emptyLedger(), payments: [a!] }, { ...emptyLedger(), payments: [b!] }).payments;
+      expect(merged!.txs.transfer).toBe("0xt2");
+      expect(merged!.earlierTransfers).toEqual(["0xt1"]);
+    }
+    // Even when the older copy wins, the newer copy's transfer is kept for checking.
+    const older = { ...payment("x", "0xaa", "swapped", "0xt1"), updatedAt: "2026-11-29T01:00:00Z" };
+    const [merged] = mergeLedgers({ ...emptyLedger(), payments: [older] }, { ...emptyLedger(), payments: [resent] }).payments;
+    expect(merged!.earlierTransfers?.sort()).toEqual(["0xt1", "0xt2"].filter((h) => h !== merged!.txs.transfer));
+  });
+
+  it("keeps the higher transaction count of the two copies", () => {
+    expect(mergeLedgers({ ...emptyLedger(), lastNonce: 9 }, { ...emptyLedger(), lastNonce: 11 }).lastNonce).toBe(11);
+    expect(mergeLedgers(emptyLedger(), emptyLedger()).lastNonce).toBeUndefined();
+  });
+
   it("keeps two purchases of the same bill as two entries, so neither is forgotten", () => {
     const a = { ...emptyLedger(), payments: [payment("x", "0xaa", "paid")] };
     const b = { ...emptyLedger(), payments: [payment("x", "0xbb", "swapped")] };

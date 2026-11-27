@@ -266,6 +266,23 @@ describe("never buying or paying twice when the chain answers late", () => {
     expect(ledger.payments[0]!.status).toBe("paid");
   });
 
+  it("records the wallet's transaction count as soon as the swap is sent, even if delivery never starts", async () => {
+    const chain = fakeChain({ usdt: 5_000000n, swapDelivers: NGN(2000) });
+    chain.transfer = async () => { throw new Error("RPC timed out"); };
+    const { d, ledger } = deps(chain, [quote()]);
+    expect((await payBill(light, h, d)).kind).toBe("failed");
+    expect(ledger.lastNonce).toBe(await chain.sentCount()); // approve and swap
+  });
+
+  it("refuses a quote whose order could still settle after the agent stops waiting for it", async () => {
+    const chain = fakeChain({ usdt: 5_000000n, swapDelivers: NGN(2000) });
+    const late = quote();
+    late.firm.quote.orderDeadline = new Date(NOW.getTime() + 2 * 3600_000).toISOString();
+    const { d } = deps(chain, [late]);
+    expect(await payBill(light, h, d)).toMatchObject({ kind: "skipped", reason: expect.stringContaining("longer than the agent waits") });
+    expect(chain.writes.filter((w) => w.op === "swap")).toHaveLength(0);
+  });
+
   it("does not mistake naira bought for another bill, still awaiting delivery, for an unrecorded swap", async () => {
     const fees = h.bills.find((b) => b.id === "fees")!;
     const chain = fakeChain({ usdt: 10_000000n, swapDelivers: NGN(3000) });

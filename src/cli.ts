@@ -12,6 +12,7 @@ import { payBill } from "./payout.js";
 import { checkPrice, fmtUsdt } from "./policy.js";
 import { fetchReferenceRate } from "./rate.js";
 import { TextileClient } from "./textile.js";
+import { renderPage, type Identity } from "./render.js";
 import { verifyLedger } from "./verify.js";
 
 const env = (k: string, d?: string) => process.env[k] ?? d;
@@ -49,6 +50,14 @@ async function householdIfPresent(): Promise<Household | null> {
 
 function chainFor() {
   return makeChain({ account: account(), rpcUrl: env("RPC_URL"), gasInUsdt: env("GAS_IN_USDT") === "true" });
+}
+
+/** Count a transaction the agent sent outside a payment, so the stale-ledger guard does not mistake it for a lost one. */
+async function noteSent(chain: ReturnType<typeof chainFor>, nonceAfter: number) {
+  const ledger = await loadLedger(LEDGER_FILE);
+  if (ledger.lastNonce === undefined) return; // not armed yet; the next payment arms it
+  ledger.lastNonce = Math.max(ledger.lastNonce, nonceAfter);
+  await saveLedger(LEDGER_FILE, ledger);
 }
 
 async function openLedger(agent: `0x${string}`) {
@@ -119,7 +128,9 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
       return;
     }
 
-    const due = h.bills.filter((b) => isDue(b, now, isSettled(ledger)));
+    // Due bills, plus any bill whose naira was bought but not yet delivered, whatever its period.
+    const due = h.bills.filter((b) => isDue(b, now, isSettled(ledger))
+      || ledger.payments.some((p) => p.billId === b.id && p.status === "swapped"));
     log(`${due.length} bill(s) due on ${lagosDate(now)}`);
     if (due.length === 0) return persist();
     let failures = 0;
@@ -182,6 +193,7 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
       throw new Error(`already registered as agent #${existing.agentId} (${IDENTITY_FILE})`);
     } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
     const { agentId, hash } = await registerAgent(chain, agentURI);
+    await noteSent(chain, await chain.sentCount());
     await mkdir(dirname(IDENTITY_FILE), { recursive: true });
     await writeFile(IDENTITY_FILE, JSON.stringify({ agentId: agentId.toString(), owner: chain.agent, agentURI, registerTx: hash }, null, 2) + "\n");
     log(`registered agent #${agentId}: ${EXPLORER_TX(hash)}`);
@@ -199,6 +211,7 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
       log(`agent #${identity.agentId} already points to ${agentURI}`);
       return;
     }
+    await noteSent(chain, await chain.sentCount());
     await writeFile(IDENTITY_FILE, JSON.stringify({ ...identity, agentURI, uriTx: hash }, null, 2) + "\n");
     log(`agent #${identity.agentId} now points to ${agentURI}: ${EXPLORER_TX(hash)}`);
   },
@@ -209,6 +222,15 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     const merged = mergeLedgers(await loadLedger(upstream), await loadLedger(mine));
     await saveLedger(LEDGER_FILE, merged);
     log(`merged ledgers: ${merged.payments.length} payments, ${merged.decisions.length} decisions`);
+  },
+
+  /** Write the current figures into docs/index.html so it reads right without JavaScript. Needs no key. */
+  async render() {
+    const page = "docs/index.html";
+    const identity = await readFile(IDENTITY_FILE, "utf8").then((t) => JSON.parse(t) as Identity).catch(() => null);
+    const html = renderPage(await readFile(page, "utf8"), await household(), await loadLedger(LEDGER_FILE), identity, new Date());
+    await writeFile(page, html);
+    log(`rendered ${page}`);
   },
 
   /** Check every ledger transaction against the chain. Needs no key. */

@@ -1,11 +1,13 @@
 # Ilé
 
+![Ilé's live page: ₦3,000 delivered, one of five bills paid, with links to the swap, the delivery and the agent's identity](docs/screenshot.jpg)
+
 Ilé is an agent that pays a Nigerian family's household bills in naira from US dollars held abroad. The name is Yoruba for home. It holds USD₮ on Celo, and on the day each bill is due it buys the exact naira amount as cNGN on Textile FX and sends it to the family member, inside spending limits the sender sets.
 
 It is used by one real family: AJ in Calgary, paying bills for his sister Halimah, his brother Gbolahan and his cousin Eniola in Nigeria.
 
 - Live page: https://ile-family.pages.dev
-- The same page on Vercel: https://ile-docs.vercel.app. Vercel's automatic DDoS protection can answer scripted requests, such as `curl` from a cloud server, with a 403 challenge. Scripts and agents should use the address above or the JSON below.
+- Mirror: https://ile-docs.vercel.app
 - Data as JSON: [ledger](https://ile-family.pages.dev/data/ledger.json), [household](https://ile-family.pages.dev/data/household.json), [identity](https://ile-family.pages.dev/data/identity.json). The agent copies these into the site after every run.
 - Agent wallet: [`0x2E5b3E46Db5d842EF5be17867900C428E635eB51`](https://celoscan.io/address/0x2E5b3E46Db5d842EF5be17867900C428E635eB51)
 - ERC-8004 identity: [agent #10136](https://celoscan.io/tx/0xcaf4f0c291eb4d8808fd4ef40cc7ec67df85441f0a8197374a9ef1198e2d3195)
@@ -22,7 +24,7 @@ It is used by one real family: AJ in Calgary, paying bills for his sister Halima
    | Textile FX swap: 2.0832 USD₮ in, 3,000 cNGN out | [0x7e96…5802](https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802) |
    | Transfer 3,000 cNGN to Halimah | [0x8ac5…d966](https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966) |
 
-2. **See that it arrived.** Her reply, shared with her permission: *"I got my ₦3,000 for the light bill."* The screenshot, cropped to remove contact details, shows her MetaMask on Celo with 3,000 cNGN in the wallet the agent paid: [`evidence/halimah-electricity-received.jpg`](evidence/halimah-electricity-received.jpg).
+2. **See that it arrived.** Her reply, shared with her permission: *"I got my ₦3,000 for the light bill."* The screenshot, cropped to remove contact details, shows her MetaMask on Celo with 3,000 cNGN in the wallet the agent paid: [`docs/evidence/halimah-electricity-received.jpg`](docs/evidence/halimah-electricity-received.jpg).
 
 3. **Check it yourself, with no keys.** This rebuilds every payment in the ledger from the chain alone: who sent each transaction, whether it carries the tag, what went in and out of the swap, and what reached the recipient.
 
@@ -37,7 +39,7 @@ It is used by one real family: AJ in Calgary, paying bills for his sister Halima
 
 | Requirement | Where |
 |---|---|
-| A tagged Textile FX conversion on Celo mainnet, in a listed corridor, used in the product flow | USD₮ to cNGN swap [0x7e96…5802](https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802), bought to pay a bill |
+| A tagged Textile FX conversion on Celo mainnet, in a listed corridor, used in the product flow | USD₮ to cNGN swap [0x7e96…5802](https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802), bought to pay a bill. It calls Textile's reactor, [`0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3`](https://celoscan.io/address/0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3), which Celoscan shows without a name |
 | A local-stablecoin payment that reaches a recipient outside the team | 3,000 cNGN to Halimah, [0x8ac5…d966](https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966) |
 | An ERC-8004 identity, registered from the agent wallet | Agent #10136, [0xcaf4…3195](https://celoscan.io/tx/0xcaf4f0c291eb4d8808fd4ef40cc7ec67df85441f0a8197374a9ef1198e2d3195). The agent card is at [ile-family.pages.dev/agent.json](https://ile-family.pages.dev/agent.json), the address registered on chain, with a copy at [ile-docs.vercel.app/agent.json](https://ile-docs.vercel.app/agent.json) |
 | Attribution tag on every counted transaction | The tag is attached once, where the wallet client is built in [`src/chain.ts`](src/chain.ts). [`test/tagging.test.ts`](test/tagging.test.ts) proves approvals, swaps and transfers all carry it. |
@@ -52,7 +54,7 @@ The household lives in one file, [`household.json`](household.json): who the rec
 
 | Recipient | Bill | Amount | Due |
 |---|---|---|---|
-| Halimah, sister | Prepaid electricity top-up | ₦3,000 | 28 Nov, paid 26 Nov |
+| Halimah, sister | Prepaid electricity top-up | ₦3,000 | 28 Nov. Paid 26 Nov, started by hand as the first live test |
 | Gbolahan, brother | Mobile data | ₦2,000 | 29 Nov |
 | Eniola, cousin | Transport for the week | ₦2,500 | 1 Dec |
 | Halimah | Market and household upkeep | ₦2,000 | 3 Dec |
@@ -88,9 +90,11 @@ These rules live in the agent's code, not in a smart contract.
 
 The family's dollars sit as USD₮ in the agent's own wallet on Celo, [`0x2E5b…eB51`](https://celoscan.io/address/0x2E5b3E46Db5d842EF5be17867900C428E635eB51). One private key can move them. AJ holds it, and the agent uses it from a GitHub Actions secret. AJ tops the wallet up when it runs low.
 
-## A note on the rate
+## What it costs
 
-The free reference sources track the CBN's official rate, about ₦1,360 per dollar in late November 2026. Textile paid ₦1,440 per dollar, which matches Nigeria's street rate that week. The street rate is about 6% above the official one. Ilé delivered naira at the street rate, roughly 6% more than the official rate. It does not beat the market.
+On the first payment, Textile's fee was 0.000416 USD₮ and the swap's gas, paid in USD₮, was about 0.0031. Together that is about 0.17% of the $2.08 spent. Sending the same money through a remittance service typically costs several percent in fees and rate margin.
+
+Textile paid ₦1,440 per dollar. That matches Nigeria's street rate that week and is about 6% more than the CBN's official ₦1,360. Ilé gets the market rate; it does not beat it.
 
 ## Status, including what went wrong
 
@@ -113,7 +117,9 @@ The fix has three parts:
 - Transaction hashes are recorded the moment they go out, even if the node never answers, and a later run checks them on chain before acting (see *How one bill is paid*).
 - Receipts from a confirmation are kept, not fetched again from a node that may be behind.
 - Nonces count up within a run, so a lagging node cannot hand out one already used.
-- Every run checks out the latest ledger. Saving it retries until it lands, and if someone else changed it meanwhile, the two copies are combined so neither loses a payment.
+- Every run checks out the latest ledger. Saving it retries through network errors, and if someone else changed it meanwhile, the two copies are combined so neither loses a payment or a transfer.
+- The ledger records how many transactions the wallet has sent. If the chain shows more, the ledger is out of date, and the agent refuses to buy until it is fixed.
+- A crash test in [`test/stress/crash.test.ts`](test/stress/crash.test.ts) stops the agent at each of 30 points in a payment, under four kinds of network trouble, then runs it again. In all 120 cases the bill is bought once and paid once.
 
 **Known limits**
 
@@ -126,7 +132,7 @@ The fix has three parts:
 
 ```bash
 npm ci
-npm test                    # 44 tests: rules, schedules, tagging, swaps, recovery
+npm test                    # 224 tests: rules, schedules, tagging, swaps, recovery, crashes
 npm run agent -- status     # balances and what is due; needs AGENT_PRIVATE_KEY
 npm run agent -- run --dry-run   # prices every unpaid bill on Textile; moves nothing
 npm run agent -- run        # pays whatever is due
@@ -148,6 +154,7 @@ npm run verify              # checks the ledger against the chain; needs no key
 | [`src/receipts.ts`](src/receipts.ts) | Reading token movements from receipts |
 | [`src/adopt.ts`](src/adopt.ts) | Recovering a swap the agent completed but could not record |
 | [`src/verify.ts`](src/verify.ts) | Checking the ledger against the chain |
+| [`src/render.ts`](src/render.ts) | Writing the figures into the page after each run, so it reads without JavaScript |
 | [`data/ledger.json`](data/ledger.json) | Every payment and every refusal, committed by the agent |
 | [`docs/`](docs/) | The public page and the ERC-8004 agent card |
 | [`.github/workflows/agent.yml`](.github/workflows/agent.yml) | The scheduled agent |

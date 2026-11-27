@@ -6,6 +6,7 @@
 <title>Ilé, a family's bills in Nigeria</title>
 <meta name="description" content="Ilé is an agent that pays a Nigerian family's bills in naira from US dollars, converting on Textile FX on Celo. Every payment is public and can be checked.">
 <meta name="theme-color" content="#131A4B">
+<meta name="color-scheme" content="light">
 <link rel="canonical" href="https://ile-family.pages.dev/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ilé">
@@ -17,7 +18,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Ilé: a family's bills in Nigeria, paid on the day they're due. An agent swaps USD₮ for naira on Textile FX and pays each bill on Celo.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Ilé, a family's bills in Nigeria paid on the day they're due">
+<meta name="twitter:title" content="Ilé, an agent that pays a family's bills in Nigeria">
 <meta name="twitter:description" content="An agent swaps USD₮ for naira on Textile FX and pays each household bill on Celo. Every payment is public and can be checked.">
 <meta name="twitter:image" content="https://ile-family.pages.dev/og.jpg">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -84,10 +85,13 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
   .figure .cur { font-size: 0.5em; font-weight: 500; letter-spacing: 0; vertical-align: 0.68em; margin-right: 0.12em; color: var(--on-dye-soft); }
   .figure-note { margin: 1.1rem 0 0; font-size: 1.15rem; color: var(--on-dye-soft); }
   .figure-note b { color: var(--on-dye); font-weight: 500; }
+  .proof-row { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; margin: 1.1rem 0 0; padding: 0; list-style: none; font-size: 0.98rem; }
+  .proof-row a { color: var(--on-dye); }
   .ledger { margin: 0; border-top: 1px solid var(--dye-line); }
   .ledger div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.95rem 0; border-bottom: 1px solid var(--dye-line); }
   .ledger dt { color: var(--on-dye-soft); }
   .ledger dd { margin: 0; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; }
+  .ledger dd a { color: var(--on-dye); font-size: 1rem; font-weight: 500; }
   .ledger-foot { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--on-dye-soft); }
   .ledger-foot a { color: var(--on-dye); }
 
@@ -250,16 +254,17 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
 <div class="hero" id="top">
   <div class="wrap">
     <div>
-      <h1 id="headline"><strong>Ilé</strong> pays a family's bills in Nigeria on the day they're due, from dollars held abroad.</h1>
-      <p class="figure" id="f-ngn">₦0</p>
-      <p class="figure-note" id="f-note">delivered so far</p>
+      <h1 id="headline"><strong>Ilé</strong> is an agent that pays the Ajala family's bills in Nigeria. It swaps dollars AJ holds in Calgary for naira on Textile FX and sends each bill on Celo.</h1>
+      <p class="figure" id="f-ngn"><span class="cur">₦</span>3,000</p>
+      <p class="figure-note" id="f-note">delivered so far. Textile's fee was $0.0004, 0.02% of the dollars spent. Next is <b>mobile data for Gbolahan</b> on 29 Nov.</p>
+      <ul class="proof-row" id="f-proof"><li><a href="https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802" rel="noopener">Swap on Textile</a></li><li><a href="https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966" rel="noopener">Delivered to Halimah</a></li><li><a href="https://celoscan.io/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/10136" rel="noopener">ERC-8004 agent #10136</a></li></ul>
     </div>
     <div>
       <dl class="ledger">
-        <div><dt>Bills paid</dt><dd id="f-count">0 of 0</dd></div>
-        <div><dt>Rate paid</dt><dd id="f-rate">None yet</dd></div>
-        <div><dt>Spent, fees included</dt><dd id="f-usd">$0.00</dd></div>
-        <div><dt>Left in the agent</dt><dd id="f-bal">Checking Celo</dd></div>
+        <div><dt>Bills paid</dt><dd id="f-count">1 of 5</dd></div>
+        <div><dt>Rate paid</dt><dd id="f-rate">₦1,440 per $</dd></div>
+        <div><dt>Spent, fees included</dt><dd id="f-usd">$2.08</dd></div>
+        <div><dt>Left in the agent</dt><dd id="f-bal"><a href="https://celoscan.io/address/0x2E5b3E46Db5d842EF5be17867900C428E635eB51#tokentxns">See on Celoscan</a></dd></div>
       </dl>
       <p class="ledger-foot">The dollars sit as USD₮ in the agent's own wallet on Celo. AJ tops it up. Figures are read from the ledger and from Celo when you open this page.</p>
     </div>
@@ -268,13 +273,13 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
 </div>
 
 <main class="wrap">
-  <noscript><p style="margin:2rem 0 0">This page fills in its figures with JavaScript. Without it, read the raw data: <a href="https://github.com/Plutoski/ile/blob/main/data/ledger.json">the ledger</a> and <a href="https://github.com/Plutoski/ile/blob/main/household.json">the household file</a>.</p></noscript>
+  <noscript><p style="margin:2rem 0 0">The figures here were written in after the agent's last run. The raw data is in <a href="https://github.com/Plutoski/ile/blob/main/data/ledger.json">the ledger</a> and <a href="https://github.com/Plutoski/ile/blob/main/household.json">the household file</a>.</p></noscript>
   <section id="bills" aria-labelledby="h-bills">
     <div class="head">
       <h2 id="h-bills">This cycle's bills</h2>
-      <p>Each bill is paid on its date, Lagos time. The agent runs every four hours and pays whatever is due.</p>
+      <p>Each bill is paid on its date, Lagos time. The agent runs every four hours and pays whatever is due. The first bill was paid two days early, by hand, as the first live test.</p>
     </div>
-    <ol class="timeline" id="timeline"><li class="stop"><span class="who">Loading the household.</span></li></ol>
+    <ol class="timeline" id="timeline"><span class="track" aria-hidden="true"></span><li class="stop paid"><span class="knot" aria-hidden="true"></span><div class="body"><span class="when">26 Nov</span><span class="what">Prepaid electricity top‑up</span><span class="who">Halimah, sister</span></div><div class="side"><span class="amt">₦3,000</span><span class="state">Paid early</span></div></li><li class="stop next"><span class="knot" aria-hidden="true"></span><div class="body"><span class="when">29 Nov</span><span class="what">Mobile data</span><span class="who">Gbolahan, brother</span></div><div class="side"><span class="amt">₦2,000</span><span class="state">Next</span></div></li><li class="stop "><span class="knot" aria-hidden="true"></span><div class="body"><span class="when">1 Dec</span><span class="what">Transport for the week</span><span class="who">Eniola, cousin</span></div><div class="side"><span class="amt">₦2,500</span><span class="state">Scheduled</span></div></li><li class="stop "><span class="knot" aria-hidden="true"></span><div class="body"><span class="when">3 Dec</span><span class="what">Market and household upkeep</span><span class="who">Halimah, sister</span></div><div class="side"><span class="amt">₦2,000</span><span class="state">Scheduled</span></div></li><li class="stop "><span class="knot" aria-hidden="true"></span><div class="body"><span class="when">5 Dec</span><span class="what">Airtime</span><span class="who">Gbolahan, brother</span></div><div class="side"><span class="amt">₦2,000</span><span class="state">Scheduled</span></div></li></ol>
   </section>
 
   <section id="payments" aria-labelledby="h-payments">
@@ -285,7 +290,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
     <table class="book">
       <colgroup><col style="width:15%"><col><col style="width:12%"><col style="width:10%"><col style="width:17%"><col style="width:17%"></colgroup>
       <thead><tr><th>Paid</th><th>Bill</th><th class="r">Naira</th><th class="r">Cost</th><th class="r">Rate</th><th>Proof on Celo</th></tr></thead>
-      <tbody id="book"><tr><td class="empty" colspan="6">Loading payments from the ledger.</td></tr></tbody>
+      <tbody id="book"><tr><td class="lead" data-label="Paid">26 Nov, 00:09</td><td data-label="Bill"><span>Prepaid electricity top‑up<span class="sm">to Halimah</span></span></td><td class="r" data-label="Naira">₦3,000</td><td class="r" data-label="Cost">$2.08</td><td class="r" data-label="Rate"><span>₦1,440<span class="sm">recovered from chain</span></span></td><td class="proof" data-label="Proof"><span><a href="https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802" rel="noopener">Swap</a><a href="https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966" rel="noopener">Transfer</a></span></td></tr></tbody>
     </table>
     <div id="notes"></div>
   </section>
@@ -299,7 +304,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
       </div>
       <figure>
         <img src="evidence/halimah-electricity-received.jpg" width="330" height="507" loading="lazy" alt="Halimah's MetaMask on Celo showing 3,000 cNGN, with her message: I got my ₦3,000 for the light bill">
-        <figcaption>Her wallet on Celo. Cropped to remove her number.</figcaption>
+        <figcaption>Her wallet on Celo, cropped to remove her number. <a href="https://celoscan.io/address/0x70Db9413327F370098DE8061BFd377b692De30E5#tokentxns">See it on Celoscan</a>.</figcaption>
       </figure>
     </div>
   </section>
@@ -309,7 +314,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
       <h2 id="h-rules">Rules it can't break</h2>
       <p>These are checked in the agent's code before any money moves. They are not enforced by a smart contract, but you can read every one in <a href="https://github.com/Plutoski/ile/tree/main/src">the source code</a>. If one fails, the agent cancels and nothing is sent.</p>
     </div>
-    <dl class="rules" id="rule-list"></dl>
+    <dl class="rules" id="rule-list"><div><dt>No bill costs more than $3</dt><dd>Counting Textile's fee. A dearer quote is cancelled.</dd></div><div><dt>No more than $10 a month</dt><dd>Across every bill in the Lagos calendar month.</dd></div><div><dt>Never more than 3% below the official rate</dt><dd>The CBN rate is read from two sources. If they disagree, nothing is paid.</dd></div><div><dt>Only the family's wallets</dt><dd>Naira goes only to the addresses in the household file.</dd></div><div><dt>Only Textile's contract</dt><dd>The agent approves and calls Textile's swap contract and nothing else, for the exact amount.</dd></div><div><dt>Never pays twice</dt><dd>Each step is saved before the next. A run that stops halfway is finished by the next one, not repeated.</dd></div></dl>
   </section>
 
   <section id="verify" aria-labelledby="h-verify">
@@ -319,7 +324,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
     </div>
     <div class="verify">
       <dl class="facts">
-        <div><dt>Agent wallet</dt><dd><a class="mono" id="agent-link" href="#">0x2E5b…eB51</a><button class="copy" type="button" id="agent-copy" data-copy="0x2E5b3E46Db5d842EF5be17867900C428E635eB51" aria-label="Copy wallet address"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
+        <div><dt>Agent wallet</dt><dd><a class="mono" id="agent-link" href="https://celoscan.io/address/0x2E5b3E46Db5d842EF5be17867900C428E635eB51">0x2E5b…eB51</a><button class="copy" type="button" id="agent-copy" data-copy="0x2E5b3E46Db5d842EF5be17867900C428E635eB51" aria-label="Copy wallet address"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
         <div><dt>ERC-8004 identity</dt><dd id="agent-id"><a href="https://celoscan.io/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/10136">Agent #10136</a></dd></div>
         <div><dt>Attribution tag</dt><dd><span class="mono">celo_10e86a43fdc3</span><button class="copy" type="button" data-copy="celo_10e86a43fdc3" aria-label="Copy attribution tag"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
         <div><dt>Where the money sits</dt><dd>In the agent wallet</dd></div>
@@ -332,10 +337,10 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
         <p>No keys needed. For each transaction it checks who sent it, the attribution tag and the amounts.</p>
         <div class="term">
           <div class="term-bar"><span>Terminal</span><button class="copy" type="button" data-copy-from="cmd" aria-label="Copy commands"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></div>
-<pre id="cmd">git clone https://github.com/Plutoski/ile
+<pre id="cmd" tabindex="0">git clone https://github.com/Plutoski/ile
 cd ile && npm ci && npm run verify</pre>
         </div>
-        <p class="passed">Or <a href="https://github.com/Plutoski/ile/actions/runs/45724688085/job/139591444690">see a passing check</a> that GitHub Actions already ran.</p>
+        <p class="passed">GitHub Actions runs the same check, with the tests, <a href="https://github.com/Plutoski/ile/actions/workflows/ci.yml">after every change</a>.</p>
       </div>
     </div>
   </section>
@@ -345,7 +350,7 @@ cd ile && npm ci && npm run verify</pre>
   Built for Celo's Agents Open for Business hackathon, Stablecoin Corridors track. Quotes come from Textile FX. The official rate is the Central Bank of Nigeria's.
 </footer>
 
-<nav class="tabs" aria-label="Sections">
+<nav class="tabs" aria-label="Jump to">
   <a href="#top"><svg aria-hidden="true"><use href="#i-home"/></svg>Home</a>
   <a href="#bills"><svg aria-hidden="true"><use href="#i-cal"/></svg>Bills</a>
   <a href="#payments"><svg aria-hidden="true"><use href="#i-book"/></svg>Payments</a>
@@ -405,11 +410,18 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
   // A paid bill shows the Lagos day it was paid, which can be before its due date.
   const shownDate = (b) => { const p = paymentOf(b); return p ? lagosDate(new Date(p.updatedAt)) : dueDate(b, now); };
 
+  if (!household && !ledger) {
+    document.getElementById("f-note").replaceChildren("The household and payments couldn't load. Read them on GitHub: ",
+      link("https://github.com/Plutoski/ile/blob/main/data/ledger.json", "the ledger"), ".");
+    document.getElementById("timeline").replaceChildren(el("li", { class: "stop" }, el("span", { class: "who" }, "The household couldn't load.")));
+    document.getElementById("book").replaceChildren(el("tr", {}, el("td", { class: "empty", colspan: "6" }, "The ledger couldn't load.")));
+    return;
+  }
   if (household) {
     const sender = household.sender.match(/^([^(]+)\(([^)]+)\)/);
-    const family = household.name.replace(/,.*$/, "");
-    if (sender) document.getElementById("headline").innerHTML =
-      `<strong>Ilé</strong> pays ${family.replace(/^The /, "the ")}'s bills in Nigeria on the day they're due, from dollars ${sender[1].trim()} holds in ${sender[2]}.`;
+    const family = household.name.replace(/,.*$/, "").replace(/^The /, "the ");
+    if (sender) document.getElementById("headline").replaceChildren(el("strong", {}, "Ilé"),
+      ` is an agent that pays ${family}'s bills in Nigeria. It swaps dollars ${sender[1].trim()} holds in ${sender[2]} for naira on Textile FX and sends each bill on Celo.`);
   }
 
   // Hero
@@ -420,13 +432,24 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
   const next = ordered.find((b) => !isPaid(b));
   document.getElementById("f-ngn").innerHTML = `<span class="cur">₦</span>${Math.round(totalNgn).toLocaleString("en-NG")}`;
   const nextWho = next ? person(next.recipientId)?.name : null;
-  document.getElementById("f-note").innerHTML = next
-    ? `delivered so far. Next is <b>${next.label.toLowerCase()} for ${nextWho ?? "the family"}</b> on ${dayMonth(dueDate(next, now))}.`
-    : "delivered. Every bill this cycle is paid.";
+  const fees = payments.reduce((s, p) => s + Number(p.usdtFee) / 1e6, 0);
+  const cost = usdTotal > 0 ? ` Textile's fee was $${fees.toFixed(4)}, ${(fees / usdTotal * 100).toFixed(2)}% of the dollars spent.` : "";
+  document.getElementById("f-note").replaceChildren(...(next
+    ? ["delivered so far." + cost + " Next is ", el("b", {}, `${next.label.toLowerCase()} for ${nextWho ?? "the family"}`), ` on ${dayMonth(dueDate(next, now))}.`]
+    : ["delivered. Every bill this cycle is paid." + cost]));
+  const last = payments[0];
+  const proof = [];
+  if (last) {
+    proof.push(link(CELOSCAN + "/tx/" + last.txs.swap, "Swap on Textile"));
+    proof.push(link(CELOSCAN + "/tx/" + last.txs.transfer, "Delivered to " + (person(last.recipientId)?.name ?? short(last.recipient))));
+  }
+  const agentNo = identity?.agentId ?? 10136;
+  proof.push(link(CELOSCAN + "/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/" + agentNo, "ERC-8004 agent #" + agentNo));
+  document.getElementById("f-proof").replaceChildren(...proof.map((a) => el("li", {}, a)));
   document.getElementById("f-count").textContent = `${paidCount} of ${bills.length}`;
   document.getElementById("f-usd").textContent = "$" + usdTotal.toFixed(2);
   if (usdTotal > 0) document.getElementById("f-rate").textContent = ngn(totalNgn / usdTotal) + " per $";
-  usdtBalance(agent).then((b) => { document.getElementById("f-bal").textContent = b === null ? "Unavailable" : "$" + b.toFixed(2) + " USD₮"; });
+  usdtBalance(agent).then((b) => { if (b !== null) document.getElementById("f-bal").textContent = "$" + b.toFixed(2) + " USD₮"; });
 
   // Bills timeline
   const tl = document.getElementById("timeline");
@@ -438,7 +461,7 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
     if (paid) lastPaid = i;
     const who = person(b.recipientId);
     const cls = paid ? "paid" : b === next ? "next" : "";
-    const state = paid ? "Paid" : b === next ? "Next" : "Scheduled";
+    const state = paid ? (shownDate(b) < dueDate(b, now) ? "Paid early" : "Paid") : b === next ? "Next" : "Scheduled";
     tl.append(el("li", { class: "stop " + cls },
       el("span", { class: "knot", "aria-hidden": "true" }),
       el("div", { class: "body" },
@@ -468,7 +491,8 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
 
   // Passbook
   const book = document.getElementById("book");
-  if (payments.length) book.replaceChildren();
+  if (payments.length || ledger) book.replaceChildren();
+  if (!payments.length && ledger) book.append(el("tr", {}, el("td", { class: "empty", colspan: "6" }, "No payments yet.")));
   for (const p of payments) {
     const b = billOf(p.billId), who = person(p.recipientId);
     const official = p.referenceRate ? ((p.rate - p.referenceRate) / p.referenceRate) * 100 : null;
@@ -478,22 +502,23 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
       el("td", { class: "r", "data-label": "Naira" }, ngn(p.amountNgn)),
       el("td", { class: "r", "data-label": "Cost" }, usd(p.usdtSpent)),
       el("td", { class: "r", "data-label": "Rate" }, el("span", {}, ngn(p.rate),
-        el("span", { class: "sm" }, official === null ? "official rate not saved" : `${official >= 0 ? "+" : ""}${official.toFixed(1)}% vs official`))),
+        el("span", { class: "sm" }, official === null ? (p.rfqId === "recovered-from-chain" ? "recovered from chain" : "official rate not saved") : `${official >= 0 ? "+" : ""}${official.toFixed(1)}% vs official`))),
       el("td", { class: "proof", "data-label": "Proof" }, el("span", {}, link(CELOSCAN + "/tx/" + p.txs.swap, "Swap"), link(CELOSCAN + "/tx/" + p.txs.transfer, "Transfer")))));
   }
 
   // Refusals and failures, written as notes under the book
   const notes = document.getElementById("notes");
+  notes.replaceChildren();
   for (const d of [...(ledger?.decisions ?? [])].reverse().slice(0, 8)) {
     const b = billOf(d.billId);
     const later = payments.find((p) => p.billId === d.billId && p.period === d.period && p.updatedAt > d.at);
-    const reason = d.reason.replace(/\b(\d{7,})\b/g, (n) => ngn(Number(n) / 1e6));
+    const reason = String(d.reason ?? "no reason recorded").replace(/\b(\d{7,})\b/g, (n) => ngn(Number(n) / 1e6));
     const label = b?.label.toLowerCase() ?? d.billId;
     const note = el("p", { class: "note" + (later ? " fixed" : "") }, el("span", { class: "sm" }, when(d.at)));
-    if (later && /delivered 0/.test(d.reason)) {
+    if (later && /delivered 0/.test(reason)) {
       const name = person(later.recipientId)?.name ?? "the family member";
-      note.append(el("b", {}, `The first try at the ${label} failed, then fixed itself. `),
-        `The swap went through, but the agent read its balance before the network caught up, and stopped. The next run found the swap on chain and paid ${name}. `,
+      note.append(el("b", {}, `The first try at the ${label} failed halfway. `),
+        `The swap went through, but the agent could not confirm it and stopped. A recovery command checked the swap on chain and paid ${name}. That gap is now closed in the code. `,
         link(CELOSCAN + "/tx/" + later.txs.transfer, "See the transfer"), ".");
     } else {
       note.append(el("b", {}, `${d.action === "failed" ? "Failed" : "Refused"}: ${label}. `), reason + (later ? " A later run paid it." : ""));
@@ -504,6 +529,7 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
   // Rules
   const pol = household?.policy;
   const rules = document.getElementById("rule-list");
+  rules.replaceChildren();
   const rule = (t, d) => rules.append(el("div", {}, el("dt", {}, t), el("dd", {}, d)));
   if (pol) {
     rule(`No bill costs more than $${pol.maxUsdtPerPayout}`, "Counting Textile's fee. A dearer quote is cancelled.");

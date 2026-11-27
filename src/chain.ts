@@ -33,6 +33,8 @@ export interface ChainOps {
   transfer(token: Address, to: Address, amount: bigint, onSent?: OnSent, nonce?: number): Promise<Hash>;
   /** True once a mined transaction from the agent has used this nonce. */
   nonceUsed(nonce: number): Promise<boolean>;
+  /** How many of the agent's transactions are mined. */
+  sentCount(): Promise<number>;
   /** The outcome of a transaction, or null if no node we reach has it yet. */
   receiptOf(hash: Hash, token: Address): Promise<TxOutcome | null>;
 }
@@ -132,6 +134,7 @@ export function makeChain({ account, rpcUrl = DEFAULT_RPC_URL, transport, gasInU
     transfer: (token, to, amount, onSent, pinned) =>
       write((nonce) => wallet.writeContract({ address: token, abi: erc20Abi, functionName: "transfer", args: [to, amount], nonce, ...fee }), onSent, pinned),
     nonceUsed: async (nonce) => (await publicClient.getTransactionCount({ address: account.address, blockTag: "latest" })) > nonce,
+    sentCount: () => publicClient.getTransactionCount({ address: account.address, blockTag: "latest" }),
     receiptOf,
   };
   return { ...ops, publicClient, wallet, fee, confirm };
