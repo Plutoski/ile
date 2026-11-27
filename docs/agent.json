@@ -2,11 +2,11 @@
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
   "name": "Ilé",
   "description": "Household bill agent. Holds a family's USD₮ and pays each household bill in Nigeria in cNGN on its due date, converting on Textile FX on Celo, within spending caps and a rate floor set by the sender. Every payment is public and verifiable.",
-  "image": "https://ile-docs.vercel.app/icon.svg",
+  "image": "https://ile-family.pages.dev/icon.svg",
   "services": [
     {
       "name": "web",
-      "endpoint": "https://ile-docs.vercel.app/"
+      "endpoint": "https://ile-family.pages.dev/"
     },
     {
       "name": "source",

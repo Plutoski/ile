@@ -1,0 +1,31 @@
+name: probe
+
+# Checks that the public site answers scripted clients, the way a review bot sees it.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 9 * * *"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request each address as curl
+        run: |
+          fail=0
+          for url in \
+            https://ile-family.pages.dev/ \
+            https://ile-family.pages.dev/data/ledger.json \
+            https://ile-family.pages.dev/agent.json \
+            https://ile-family.pages.dev/llms.txt \
+            https://ile-docs.vercel.app/ \
+            https://ile-docs.vercel.app/agent.json; do
+            out=$(curl -sS -o /dev/null -D - --max-time 20 -w 'HTTP %{http_code} in %{time_total}s' "$url" || true)
+            code=$(printf '%s\n' "$out" | tail -n 1)
+            mitigated=$(printf '%s\n' "$out" | grep -i '^x-vercel-mitigated' | tr -d '\r' || true)
+            echo "$url  $code  $mitigated"
+            case "$url" in
+              https://ile-family.pages.dev/*) case "$code" in "HTTP 200"*) ;; *) fail=1 ;; esac ;;
+            esac
+          done
+          exit $fail
