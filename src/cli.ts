@@ -6,7 +6,7 @@ import { makeChain, makePublicClient } from "./chain.js";
 import { AGENT_ADDRESS, EXPLORER_TX, TOKENS, USDT_DECIMALS } from "./config.js";
 import { dueDateOf, isDue, lagosDate, parseHousehold, periodOf, type Household } from "./household.js";
 import { adoptSwap } from "./adopt.js";
-import { registerAgent } from "./identity.js";
+import { registerAgent, setAgentURI } from "./identity.js";
 import { isSettled, loadLedger, saveLedger, usdtSpentInMonth } from "./ledger.js";
 import { payBill } from "./payout.js";
 import { effectiveRate, fmtUsdt } from "./policy.js";
@@ -177,6 +177,17 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     await mkdir(dirname(IDENTITY_FILE), { recursive: true });
     await writeFile(IDENTITY_FILE, JSON.stringify({ agentId: agentId.toString(), owner: chain.agent, agentURI, registerTx: hash }, null, 2) + "\n");
     log(`registered agent #${agentId}: ${EXPLORER_TX(hash)}`);
+  },
+
+  /** Point the registered ERC-8004 identity at a new agent card URL. Safe to rerun. */
+  async "set-uri"([agentURI]) {
+    if (!agentURI?.startsWith("https://")) throw new Error("usage: set-uri <https URL of agent.json>");
+    const identity = JSON.parse(await readFile(IDENTITY_FILE, "utf8"));
+    const chain = chainFor();
+    const { hash } = await setAgentURI(chain, BigInt(identity.agentId), agentURI);
+    if (!hash) { log(`agent #${identity.agentId} already points to ${agentURI}`); return; }
+    await writeFile(IDENTITY_FILE, JSON.stringify({ ...identity, agentURI, uriTx: hash }, null, 2) + "\n");
+    log(`agent #${identity.agentId} now points to ${agentURI}: ${EXPLORER_TX(hash)}`);
   },
 
   /** Check every ledger transaction against the chain. Needs no key. */

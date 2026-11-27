@@ -1,4 +1,4 @@
-import { parseAbi, parseEventLogs, zeroAddress } from "viem";
+import { parseAbi, parseEventLogs, zeroAddress, type Hex } from "viem";
 import type { makeChain } from "./chain.js";
 import { ERC8004 } from "./config.js";
 
@@ -30,4 +30,28 @@ export async function registerAgent(chain: ReturnType<typeof makeChain>, agentUR
     .find((l) => l.address.toLowerCase() === ERC8004.identityRegistry.toLowerCase() && l.args.from === zeroAddress);
   if (!mint) throw new Error(`registered in ${hash} but found no mint event; check it on celoscan`);
   return { agentId: mint.args.tokenId, hash };
+}
+
+type IdentityChain = Pick<ReturnType<typeof makeChain>, "agent" | "publicClient" | "wallet" | "fee" | "confirm">;
+
+/**
+ * Point the agent's ERC-8004 registration at a new agent card.
+ * Safe to rerun: when the registry already returns `uri`, it sends nothing.
+ * The check after sending reads at the receipt's block, because a lagging
+ * node can return the old value right after a transaction confirms.
+ */
+export async function setAgentURI(chain: IdentityChain, agentId: bigint, uri: string): Promise<{ hash: Hex | null }> {
+  const registry = { address: ERC8004.identityRegistry, abi: identityAbi } as const;
+  const current = await chain.publicClient.readContract({ ...registry, functionName: "tokenURI", args: [agentId] });
+  if (current === uri) return { hash: null };
+  const owner = await chain.publicClient.readContract({ ...registry, functionName: "ownerOf", args: [agentId] });
+  if (owner.toLowerCase() !== chain.agent.toLowerCase()) {
+    throw new Error(`agent #${agentId} is owned by ${owner}, not the agent wallet ${chain.agent}`);
+  }
+  const hash = await chain.wallet.writeContract({ ...registry, functionName: "setAgentURI", args: [agentId, uri], ...chain.fee });
+  await chain.confirm(hash);
+  const { blockNumber } = await chain.publicClient.getTransactionReceipt({ hash });
+  const after = await chain.publicClient.readContract({ ...registry, functionName: "tokenURI", args: [agentId], blockNumber });
+  if (after !== uri) throw new Error(`setAgentURI ${hash} confirmed, but the registry returns ${after}`);
+  return { hash };
 }
