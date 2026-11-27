@@ -6,6 +6,20 @@
 <title>Ilé, a family's bills in Nigeria</title>
 <meta name="description" content="Ilé is an agent that pays a Nigerian family's bills in naira from US dollars, converting on Textile FX on Celo. Every payment is public and can be checked.">
 <meta name="theme-color" content="#131A4B">
+<link rel="canonical" href="https://ile-family.pages.dev/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ilé">
+<meta property="og:url" content="https://ile-family.pages.dev/">
+<meta property="og:title" content="Ilé, a family's bills in Nigeria paid on the day they're due">
+<meta property="og:description" content="An agent swaps USD₮ for naira on Textile FX and pays each household bill on Celo. Every payment is public and can be checked.">
+<meta property="og:image" content="https://ile-family.pages.dev/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ilé: a family's bills in Nigeria, paid on the day they're due. An agent swaps USD₮ for naira on Textile FX and pays each bill on Celo.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ilé, a family's bills in Nigeria paid on the day they're due">
+<meta name="twitter:description" content="An agent swaps USD₮ for naira on Textile FX and pays each household bill on Celo. Every payment is public and can be checked.">
+<meta name="twitter:image" content="https://ile-family.pages.dev/og.jpg">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://forno.celo.org" crossorigin>
 <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
@@ -98,7 +112,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
   .stop.paid .knot::after { content: ""; position: absolute; left: 5px; top: 2px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
   .stop.next .knot { border-color: var(--link); box-shadow: 0 0 0 5px rgba(50, 71, 184, 0.14); }
   .when { display: block; font-weight: 700; }
-  .what { display: block; margin-top: 0.15rem; }
+  .what { display: block; margin-top: 0.15rem; min-height: 3.2em; text-wrap: balance; } /* two lines, so every amount lines up */
   .who { display: block; color: var(--muted); font-size: 0.95rem; }
   .amt { display: block; margin-top: 0.55rem; font-weight: 700; font-size: 1.15rem; }
   .state { display: inline-block; margin-top: 0.35rem; font-size: 0.85rem; color: var(--muted); }
@@ -112,6 +126,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
   .book tr:last-child td { border-bottom: 0; }
   .book .r { text-align: right; white-space: nowrap; }
   .book .sm { display: block; color: var(--muted); font-size: 0.9rem; }
+  .book .proof a, .facts dd a, .note a { display: inline-block; padding: 0.2rem 0; }
   .book .proof a + a { margin-left: 0.9rem; }
   .book .empty { color: var(--muted); }
   .note { margin: 1.25rem 0 0; padding: 1rem 1.15rem; border-left: 3px solid var(--fail); background: #fff; color: var(--ink); }
@@ -120,8 +135,8 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
   .note .sm { display: block; color: var(--muted); font-size: 0.9rem; margin-bottom: 0.25rem; }
 
   /* Family */
-  .family { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 4rem; align-items: center; }
-  .family blockquote { margin: 0; font-size: clamp(2rem, 4.4vw, 3.4rem); font-weight: 800; line-height: 1.04; letter-spacing: -0.035em; max-width: 16ch; }
+  .family { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 4rem; align-items: start; }
+  .family blockquote { margin: 1.5rem 0 0; font-size: clamp(2rem, 4.4vw, 3.4rem); font-weight: 800; line-height: 1.04; letter-spacing: -0.035em; max-width: 16ch; }
   .family cite { display: block; margin-top: 1.5rem; font-style: normal; color: var(--muted); }
   .family cite b { color: var(--ink); font-weight: 700; }
   .family figure { margin: 0; }
@@ -183,6 +198,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
     .stop .body { grid-column: 2; }
     .stop .side { grid-column: 3; text-align: right; }
     .amt { margin-top: 0; }
+    .what { min-height: 0; }
 
     .book, .book tbody, .book tr, .book td { display: block; width: 100%; }
     .book thead { display: none; }
@@ -307,7 +323,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
         <div><dt>ERC-8004 identity</dt><dd id="agent-id"><a href="https://celoscan.io/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/10136">Agent #10136</a></dd></div>
         <div><dt>Attribution tag</dt><dd><span class="mono">celo_10e86a43fdc3</span><button class="copy" type="button" data-copy="celo_10e86a43fdc3" aria-label="Copy attribution tag"><svg aria-hidden="true"><use href="#i-copy"/></svg></button></dd></div>
         <div><dt>Where the money sits</dt><dd>In the agent wallet</dd></div>
-        <div><dt>Who can move it</dt><dd>One key, held by AJ and the agent</dd></div>
+        <div><dt>Key held by</dt><dd>AJ and the agent</dd></div>
         <div><dt>Network</dt><dd>Celo mainnet</dd></div>
         <div><dt>Runs on</dt><dd><a href="https://github.com/Plutoski/ile/actions/workflows/agent.yml">GitHub Actions</a></dd></div>
       </dl>
