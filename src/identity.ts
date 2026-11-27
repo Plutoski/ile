@@ -40,7 +40,7 @@ type IdentityChain = Pick<ReturnType<typeof makeChain>, "agent" | "publicClient"
  * The check after sending reads at the receipt's block, because a lagging
  * node can return the old value right after a transaction confirms.
  */
-export async function setAgentURI(chain: IdentityChain, agentId: bigint, uri: string): Promise<{ hash: Hex | null }> {
+export async function setAgentURI(chain: IdentityChain, agentId: bigint, uri: string, retryDelayMs = 2_000): Promise<{ hash: Hex | null }> {
   const registry = { address: ERC8004.identityRegistry, abi: identityAbi } as const;
   const current = await chain.publicClient.readContract({ ...registry, functionName: "tokenURI", args: [agentId] });
   if (current === uri) return { hash: null };
@@ -51,7 +51,16 @@ export async function setAgentURI(chain: IdentityChain, agentId: bigint, uri: st
   const hash = await chain.wallet.writeContract({ ...registry, functionName: "setAgentURI", args: [agentId, uri], ...chain.fee });
   await chain.confirm(hash);
   const { blockNumber } = await chain.publicClient.getTransactionReceipt({ hash });
-  const after = await chain.publicClient.readContract({ ...registry, functionName: "tokenURI", args: [agentId], blockNumber });
+  // A node behind the one that saw the receipt answers "block is out of range" until it catches up.
+  let after: string | undefined;
+  for (let attempt = 1; after === undefined; attempt++) {
+    try {
+      after = await chain.publicClient.readContract({ ...registry, functionName: "tokenURI", args: [agentId], blockNumber });
+    } catch (e) {
+      if (attempt >= 6) throw new Error(`setAgentURI ${hash} confirmed, but block ${blockNumber} could not be read back: ${(e as Error).message}`);
+      await new Promise((r) => setTimeout(r, retryDelayMs));
+    }
+  }
   if (after !== uri) throw new Error(`setAgentURI ${hash} confirmed, but the registry returns ${after}`);
   return { hash };
 }

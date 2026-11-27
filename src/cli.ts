@@ -185,7 +185,12 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     const identity = JSON.parse(await readFile(IDENTITY_FILE, "utf8"));
     const chain = chainFor();
     const { hash } = await setAgentURI(chain, BigInt(identity.agentId), agentURI);
-    if (!hash) { log(`agent #${identity.agentId} already points to ${agentURI}`); return; }
+    if (!hash) {
+      // Already set on chain, perhaps by an earlier run that stopped before saving. Keep the file in step.
+      if (identity.agentURI !== agentURI) await writeFile(IDENTITY_FILE, JSON.stringify({ ...identity, agentURI }, null, 2) + "\n");
+      log(`agent #${identity.agentId} already points to ${agentURI}`);
+      return;
+    }
     await writeFile(IDENTITY_FILE, JSON.stringify({ ...identity, agentURI, uriTx: hash }, null, 2) + "\n");
     log(`agent #${identity.agentId} now points to ${agentURI}: ${EXPLORER_TX(hash)}`);
   },
