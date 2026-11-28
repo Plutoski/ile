@@ -9,8 +9,9 @@ import type { Ledger, Payment } from "./ledger.js";
 
 const CELOSCAN = "https://celoscan.io";
 const REGISTRY = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
+const SELF_REGISTRY = "0xaC3DF9ABf80d0F5c020C06B04Cced27763355944";
 
-export interface Identity { agentId?: string }
+export interface Identity { agentId?: string; selfAgentId?: string; selfRegistry?: string }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const ngn = (n: number) => "₦" + Math.round(n).toLocaleString("en-NG");
@@ -77,6 +78,9 @@ export function renderPage(html: string, household: Household, ledger: Ledger, i
     proof.push(link(`${CELOSCAN}/tx/${last.txs.transfer}`, "Delivered to " + (person(last.recipientId)?.name ?? short(last.recipient))));
   }
   proof.push(link(`${CELOSCAN}/nft/${REGISTRY}/${agentNo}`, `ERC-8004 agent #${agentNo}`));
+  if (identity?.selfAgentId) {
+    proof.push(link(`${CELOSCAN}/nft/${identity.selfRegistry ?? SELF_REGISTRY}/${identity.selfAgentId}`, `Self Agent ID #${identity.selfAgentId}`));
+  }
   html = setInner(html, "f-proof", proof.map((a) => `<li>${a}</li>`).join(""));
   html = setInner(html, "f-count", `${shown.filter((s) => s.paid).length} of ${bills.length}`);
   html = setInner(html, "f-usd", `$${usd.toFixed(2)}`);

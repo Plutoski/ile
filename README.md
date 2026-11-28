@@ -11,6 +11,7 @@ It is used by one real family: AJ in Calgary, paying bills for his sister Halima
 - Data as JSON: [ledger](https://ile-family.pages.dev/data/ledger.json), [household](https://ile-family.pages.dev/data/household.json), [identity](https://ile-family.pages.dev/data/identity.json). The agent copies these into the site after every run.
 - Agent wallet: [`0x2E5b3E46Db5d842EF5be17867900C428E635eB51`](https://celoscan.io/address/0x2E5b3E46Db5d842EF5be17867900C428E635eB51)
 - ERC-8004 identity: [agent #10136](https://celoscan.io/tx/0xcaf4f0c291eb4d8808fd4ef40cc7ec67df85441f0a8197374a9ef1198e2d3195)
+- Self Agent ID: [#237](https://celoscan.io/nft/0xaC3DF9ABf80d0F5c020C06B04Cced27763355944/237), a zero-knowledge proof that one real, verified person stands behind the agent wallet. Only "over 18" was disclosed.
 - Attribution tag on every transaction: `celo_10e86a43fdc3`
 - Built for Celo's Agents Open for Business hackathon, in the Stablecoin Corridors track with Textile FX
 
@@ -42,6 +43,7 @@ It is used by one real family: AJ in Calgary, paying bills for his sister Halima
 | A tagged Textile FX conversion on Celo mainnet, in a listed corridor, used in the product flow | USD₮ to cNGN swap [0x7e96…5802](https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802), bought to pay a bill. It calls Textile's reactor, [`0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3`](https://celoscan.io/address/0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3), which Celoscan shows without a name |
 | A local-stablecoin payment that reaches a recipient outside the team | 3,000 cNGN to Halimah, [0x8ac5…d966](https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966) |
 | An ERC-8004 identity, registered from the agent wallet | Agent #10136, [0xcaf4…3195](https://celoscan.io/tx/0xcaf4f0c291eb4d8808fd4ef40cc7ec67df85441f0a8197374a9ef1198e2d3195). The agent card is at [ile-family.pages.dev/agent.json](https://ile-family.pages.dev/agent.json), the address registered on chain, with a copy at [ile-docs.vercel.app/agent.json](https://ile-docs.vercel.app/agent.json) |
+| Recommended: Self Agent ID | [#237](https://celoscan.io/nft/0xaC3DF9ABf80d0F5c020C06B04Cced27763355944/237), owned by the agent wallet itself. The agent's key signed the challenge in GitHub Actions ([`src/self.ts`](src/self.ts)); AJ scanned his passport in the Self app. The wallet sent no transaction for it. |
 | Attribution tag on every counted transaction | The tag is attached once, where the wallet client is built in [`src/chain.ts`](src/chain.ts). [`test/tagging.test.ts`](test/tagging.test.ts) proves approvals, swaps and transfers all carry it. |
 | No arbitrage, self-trading or maker activity | The agent only ever takes quotes, to pay bills |
 | Gas | Paid by the agent wallet itself, in USD₮ through Celo fee abstraction. No sponsored gas. |

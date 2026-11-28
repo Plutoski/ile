@@ -12,6 +12,7 @@ The page at https://ile-family.pages.dev has its figures written in after every 
 
 - Agent wallet: 0x2E5b3E46Db5d842EF5be17867900C428E635eB51 (Celo mainnet, chain 42220)
 - ERC-8004 identity: agent 10136 on the identity registry 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
+- Self Agent ID: 237 on the Self Agent ID registry 0xaC3DF9ABf80d0F5c020C06B04Cced27763355944, a zero-knowledge proof of one verified human behind the agent wallet
 - Registration file: https://ile-family.pages.dev/agent.json (the URI registered on chain), copy at https://ile-docs.vercel.app/agent.json
 - The same page is also at https://ile-docs.vercel.app, where Vercel's DDoS protection may answer scripted requests with a 403 challenge
 - Attribution tag on every transaction: celo_10e86a43fdc3 (ERC-8021)

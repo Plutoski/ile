@@ -22,6 +22,10 @@
     {
       "agentId": 10136,
       "agentRegistry": "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+    },
+    {
+      "agentId": 237,
+      "agentRegistry": "eip155:42220:0xaC3DF9ABf80d0F5c020C06B04Cced27763355944"
     }
   ]
 }

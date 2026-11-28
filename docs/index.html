@@ -257,7 +257,7 @@ const DATA = Promise.all([load("household.json", "household.json"), load("ledger
       <h1 id="headline"><strong>Ilé</strong> is an agent that pays the Ajala family's bills in Nigeria. It swaps dollars AJ holds in Calgary for naira on Textile FX and sends each bill on Celo.</h1>
       <p class="figure" id="f-ngn"><span class="cur">₦</span>3,000</p>
       <p class="figure-note" id="f-note">delivered so far. Textile's fee was $0.0004, 0.02% of the dollars spent. Next is <b>mobile data for Gbolahan</b> on 29 Nov.</p>
-      <ul class="proof-row" id="f-proof"><li><a href="https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802" rel="noopener">Swap on Textile</a></li><li><a href="https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966" rel="noopener">Delivered to Halimah</a></li><li><a href="https://celoscan.io/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/10136" rel="noopener">ERC-8004 agent #10136</a></li></ul>
+      <ul class="proof-row" id="f-proof"><li><a href="https://celoscan.io/tx/0x7e9690d4476337911440f899f30ac7597cc632e002b7f603f412e1fab1a65802" rel="noopener">Swap on Textile</a></li><li><a href="https://celoscan.io/tx/0x8ac50e58fa1f5e907cd0e9ccdc4b9b37da68e884e2ae1944c32f7f9a69afd966" rel="noopener">Delivered to Halimah</a></li><li><a href="https://celoscan.io/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/10136" rel="noopener">ERC-8004 agent #10136</a></li><li><a href="https://celoscan.io/nft/0xaC3DF9ABf80d0F5c020C06B04Cced27763355944/237" rel="noopener">Self Agent ID #237</a></li></ul>
     </div>
     <div>
       <dl class="ledger">
@@ -445,6 +445,7 @@ const periodOf = (bill, now) => (bill.schedule.kind === "monthly" ? lagosDate(no
   }
   const agentNo = identity?.agentId ?? 10136;
   proof.push(link(CELOSCAN + "/nft/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/" + agentNo, "ERC-8004 agent #" + agentNo));
+  if (identity?.selfAgentId) proof.push(link(CELOSCAN + "/nft/" + (identity.selfRegistry ?? "0xaC3DF9ABf80d0F5c020C06B04Cced27763355944") + "/" + identity.selfAgentId, "Self Agent ID #" + identity.selfAgentId));
   document.getElementById("f-proof").replaceChildren(...proof.map((a) => el("li", {}, a)));
   document.getElementById("f-count").textContent = `${paidCount} of ${bills.length}`;
   document.getElementById("f-usd").textContent = "$" + usdTotal.toFixed(2);
