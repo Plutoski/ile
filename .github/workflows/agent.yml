@@ -10,7 +10,7 @@ on:
         description: What to run
         type: choice
         default: status
-        options: [status, run, dry-run, pay, register, set-uri, verify]
+        options: [status, run, dry-run, pay, register, set-uri, verify, self-link, self-status]
       arg:
         description: "Bill id for pay, agent.json URL for register or set-uri"
         type: string

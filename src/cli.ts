@@ -13,6 +13,7 @@ import { checkPrice, fmtUsdt } from "./policy.js";
 import { fetchReferenceRate } from "./rate.js";
 import { TextileClient } from "./textile.js";
 import { renderPage, type Identity } from "./render.js";
+import { agentKey, registrationLink, registryAbi as selfRegistryAbi, SELF } from "./self.js";
 import { verifyLedger } from "./verify.js";
 
 const env = (k: string, d?: string) => process.env[k] ?? d;
@@ -231,6 +232,35 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     const html = renderPage(await readFile(page, "utf8"), await household(), await loadLedger(LEDGER_FILE), identity, new Date());
     await writeFile(page, html);
     log(`rendered ${page}`);
+  },
+
+  /** Print the link that ties the agent wallet to AJ's passport through Self Agent ID. The wallet sends nothing. */
+  async "self-link"() {
+    const chain = chainFor();
+    const self = makePublicClient(env("RPC_URL"));
+    const key = agentKey(chain.agent);
+    if (await self.readContract({ address: SELF.registry, abi: selfRegistryAbi, functionName: "isVerifiedAgent", args: [key] })) {
+      return log(`the agent already has a Self Agent ID; run self-status`);
+    }
+    const nonce = await self.readContract({ address: SELF.registry, abi: selfRegistryAbi, functionName: "agentNonces", args: [chain.agent] });
+    log(`open this within ${SELF.linkMinutes} minutes, then scan its QR code with the Self app and your passport:`);
+    console.log(await registrationLink(account(), nonce));
+  },
+
+  /** Check whether the agent's Self Agent ID is on chain, and record it in data/identity.json. Needs no key. */
+  async "self-status"() {
+    const self = makePublicClient(env("RPC_URL"));
+    const key = agentKey(AGENT_ADDRESS);
+    const [verified, id] = await Promise.all([
+      self.readContract({ address: SELF.registry, abi: selfRegistryAbi, functionName: "isVerifiedAgent", args: [key] }),
+      self.readContract({ address: SELF.registry, abi: selfRegistryAbi, functionName: "getAgentId", args: [key] }),
+    ]);
+    if (!verified || id === 0n) return log("no Self Agent ID yet");
+    const identity = JSON.parse(await readFile(IDENTITY_FILE, "utf8"));
+    if (identity.selfAgentId !== id.toString()) {
+      await writeFile(IDENTITY_FILE, JSON.stringify({ ...identity, selfAgentId: id.toString(), selfRegistry: SELF.registry }, null, 2) + "\n");
+    }
+    log(`Self Agent ID #${id}: one verified person stands behind ${AGENT_ADDRESS}`);
   },
 
   /** Check every ledger transaction against the chain. Needs no key. */
